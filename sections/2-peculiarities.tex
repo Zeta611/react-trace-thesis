@@ -1,0 +1,208 @@
+\chapter{Peculiarities of React Hooks}\label{chap:over}
+In this section, we examine the peculiarities of the \reacttt{useState}~(\cref{sec:useState}) and \reacttt{useEffect}~(\cref{sec:useEffect}) Hooks.
+
+We introduce a simple applicative language for \Rtrace{} that captures the essence of React Hooks and use it throughout the paper to illustrate the examples and the semantics.
+Thus we decouple ourselves from the subtleties of the complex semantics of JS \citep{RyuPar24JavaScript}, which is beyond the scope of our research.
+% In fact, it is possible to use React in tandem with other languages like ReScript (\href{https://rescript-lang.org/}{rescript-lang.org}) and ReasonML (\href{https://reasonml.github.io/}{reasonml.github.io}), further highlighting the need for decoupling React from JS.
+
+\paragraph{Syntax}
+The syntax of \Rtrace{} is given in \cref{fig:syntax}.
+A React program~$P$ is a sequence of \emph{component definitions}~$D$, followed by the \emph{main expression}~$e$.
+A component definition~$D = \cfunc{C}{x}{e}$ defines a component named~$C$ that accepts parameter~$x$ bound in body~$e$.
+A component name~$C$ is capitalized to distinguish it from other identifiers.
+Expressions~$e$ are mostly standard, except for the array view~$[\Overline{e}]$ for nested views and the Hooks.
+The \reacttt{useState} and \reacttt{useEffect} Hooks can be used only at the top level of the component bodies; they cannot be used as a sub-expression of other expressions---this is enforced by the Rules of React \citep{Met25Hooks}.
+We check this syntactically during parsing in the \Rtrace{} interpreter~(\cref{chap:impl}).
+Each \reacttt{useState} Hook is labeled uniquely with a natural number~$\ell$.
+% Constants include a unit~\reacttt{()}, booleans \reacttt{true} and \reacttt{false}, and integers~$n$.
+A view represents the structure of the UI that evaluates into either a constant, a closure, or an array view.
+An array view can represent a nested structure, modeling the JSX syntax \citep{Met22JSX}.
+A closure used as a view represents an event handler, e.g., a button or a text input.
+Metavariable~$\oplus$ stands for total binary operations over integers.
+$\print{e}$ prints to the console.
+We only consider programs~$P$ whose main expressions evaluate to a view.
+
+\begin{figure}[t]
+  \centering
+  \begin{minipage}{\textwidth}
+    \begin{flalign*}
+      x, C &\in \dom{Var} & n &\in \mathbb{Z} & \ell &\in \mathbb{N} &
+      \dom{Prog}\ P &\Coloneq \Overline{D}\ e & \dom{ComDef}\ D &\Coloneq \cfunc{C}{x}{e}
+    \end{flalign*}
+  \end{minipage}
+  \begin{bnf}[rccll]
+    e : \dom{Exp} ::=
+    | () // true // false // $n$ // $x$ // $C$ // $e \oplus e$ // $[\Overline{e}]$ // $\print{e}$ // $\cond{e}{e}{e}$ // $\seq{e}{e}$
+    | $\func{x}{e}$ // $\app{e}{e}$ // $\letbind{x}{e}{e}$ // $\stbind{x}{e}{e}$ // $\eff{e}$
+  \end{bnf}
+  \caption{Syntax of \Rtrace.}\label{fig:syntax}
+\end{figure}
+
+We model only the \reacttt{useState} and \reacttt{useEffect} Hooks in our language, as they are the most essential Hooks that are closely coupled with the rendering of components.
+\begin{itemize}
+  \item The \reacttt{useState} Hook provides a way to manage state in components, making it a cornerstone for defining user interactions in components.
+    \reacttt{useState} returns a pair of values: the current state~$x$ and a setter function~$x_{\textsf{set}}$ that updates the state.
+  \item The \reacttt{useEffect} Hook enables running arbitrary code~$e$ after a component is rendered.
+    This Hook makes it useful to synchronize with the ``outside world,'' but can lead to complex behavior when it triggers a re-render.
+    The expression passed to \reacttt{useEffect},~$e$, is called an \emph{Effect} \citep{Met25Syn}.
+\end{itemize}
+Actually, as we will see in~\cref{chap:pit}, the common pitfalls of Hooks are caused by misusing \reacttt{useState} and \reacttt{useEffect} in combination.
+We now explain how these Hooks are used in React components in~\cref{sec:useState,sec:useEffect}, before presenting their exact semantics in~\cref{chap:sem}.
+
+
+\section{The Peculiarity of \textbf{\texttt{useState}}}\label{sec:useState}
+Among the top~45 most frequent StackOverflow questions with the tag \textsf{[react-hooks]}, three---including the most frequent question by \citet{Pra19useState}---are about the semantics and timing of the \reacttt{useState} Hook and its state updates \citep{Pra19useState,vad18React,Tan19React}.
+
+\begin{wrapfigure}[4]{l}{0.23\linewidth}
+  \vspace*{-\intextsep}
+  \begin{reactcode}
+let Counter x =
+  let s := 0 in
+  [s, button (fun _ ->
+    s := s+2)];;
+Counter 0
+  \end{reactcode}
+\end{wrapfigure}
+\noindent Consider a counter that increments its value by two when clicked.
+If our language had mutable variables, one might na\"ively write the code on the left by defining a mutable variable~\reacttt{s} and adding two to it when the button is clicked.
+However, this approach presents two significant problems:
+\begin{enumerate}
+  \item The variable~\reacttt{s} would be rebound to~|0| every time the component is invoked, preventing the runtime from re-reading the component without overwriting the previous state.
+  \item Even if the previous problem were somehow solved, to determine when to update the UI to synchronize with the states, the runtime would need to track all mutable variables in each component, which would be inefficient in practice.
+\end{enumerate}
+
+The \reacttt{useState} Hook addresses these issues by providing functionality analogous to mutable variables in imperative languages, yet with a functional approach.
+Instead of directly modifying state through assignment, the state is managed by the React runtime and can only be updated by the setter function returned by the Hook.
+The \reacttt{useState} Hook allows the runtime to be aware of the state and handle its bookkeeping, therefore addressing the aforementioned two problems.
+
+\begin{wrapfigure}[5]{r}{0.33\linewidth}
+  \vspace*{-\intextsep}
+  \begin{reactcode}
+let Counter x =
+  let (s, setS) = useState x in
+  [s, button (fun _ ->
+    setS (fun s -> s+1);
+    setS (fun s -> s+1))];;
+Counter 0
+  \end{reactcode}
+\end{wrapfigure}
+Using \reacttt{useState}, we can correctly implement a functioning \reacttt{Counter} as shown on the right.
+\reacttt{useState} returns a pair of values: \reacttt{s}~that stores the current state and the setter function~\reacttt{setS} that accepts an updater function.
+Initially, \reacttt{s}~holds the value of~\reacttt{x}.
+On subsequent renders, React is able to provide the correct current state without reinitializing to~\reacttt{x}.
+
+When a button is pressed, the callback passed to it calls \reacttt{setS} twice with the updater~|fun s->s+1|.
+Unlike direct assignment to~\reacttt{s} in the previous example, this does not immediately update~\reacttt{s}, but queues the update \citep{Met25Queueing}.
+The update is processed by the runtime during the next render, ensuring that the view is re-rendered with the updated state.
+This raises a question:
+\begin{quote}
+  \emph{Precisely \emph{when} in the runtime is this update handled?}
+\end{quote}
+
+To investigate when the callback provided to \reacttt{setS} is executed, we can add diagnostic \reacttt{print}s:
+\begin{center}
+  \begin{minipage}{.5\linewidth}
+    \begin{reactcode}
+let Counter x =
+  print "Counter";
+  let (s, setS) = useState x in
+  print "Return";
+  [s, button (fun _ ->
+    setS (fun s -> s+1);
+    setS (fun s -> print "Update"; s+1))];;
+Counter 0
+    \end{reactcode}
+  \end{minipage}
+  \begin{minipage}{.3\linewidth}
+    \begin{console}[frame=topline]
+Counter
+Return
+    \end{console}
+    {\footnotesize\hspace{2em}\reacttt{button} \faHandPointUp[regular]}
+    \begin{console}[frame=bottomline, firstnumber=3]
+Counter
+Update
+Return
+    \end{console}
+  \end{minipage}
+\end{center}
+The console output shows that \verb+Counter+ and \verb+Return+ are printed during the initial rendering.
+When the button is clicked, \verb+Update+ is printed \emph{after} \verb+Counter+ and \emph{before} \verb+Return+---a behavior that is not immediately apparent from the code alone.
+
+In fact, the official React documentation does not specify exactly when the queued updates are processed, other than that they are processed sometime during the next render.
+We will clearly define how this happened by providing a formal semantics of \Rtrace{} in~\cref{chap:sem}.
+
+
+\section{The Peculiarity of \textbf{\texttt{useEffect}}}\label{sec:useEffect}
+While \reacttt{useState} hooks into the React runtime to manage component state, \reacttt{useEffect} hooks into the rendering lifecycle of components.
+Every time a component is rendered, an Effect---a suspended computation or a thunk---provided to the \reacttt{useEffect} Hook is executed.
+Effect allows developers to run arbitrary logic after the render.
+Note that in React, it is possible to specify a set of variables called \emph{dependencies,} so that the Effect runs only if those variables have changed.
+We only consider the simplest form of \reacttt{useEffect} in our language, where the Effect is run unconditionally after each render, and it is a straightforward extension to support dependencies.
+
+\begin{wrapfigure}[7]{l}{0.35\linewidth}
+  \vspace*{-\intextsep}
+  \begin{reactcode}
+let Counter x =
+  let (s, setS) = useState x in
+  useEffect (print (if s mod 2 = 0
+    then "Even" else "Odd"));
+  [s, button (fun _ ->
+    setS (fun s -> s+1);
+    setS (fun s -> s+1))];;
+Counter 0
+  \end{reactcode}
+\end{wrapfigure}
+\noindent Building upon the previous \reacttt{Counter} example, we can log \verb+Even+ or \verb+Odd+ depending on the value of the counter.
+The \reacttt{useEffect} Hook makes this straightforward, as shown on the left.
+This implementation prints either \verb+Even+ or \verb+Odd+ to the console after each render based on the parity of the counter.
+This ``delayed'' logging is possible as an Effect expression passed to \reacttt{useEffect} is unevaluated\footnote{In React/JS, an Effect needs to be wrapped inside a callback.} until after the component has rendered.
+
+While a simple \reacttt{print} as an Effect may seem trivial, this amounts to synchronizing with the outside world, which is the very purpose of the \reacttt{useEffect} Hook.
+In real life, this can be a call to some logging system or user analytics system.
+
+To understand a more peculiar aspect of \reacttt{useEffect}, consider the following \reacttt{SelfCounter} where an Effect creates an autonomous rendering cycle:
+\begin{center}
+  \begin{minipage}{.5\linewidth}
+    \begin{reactcode}
+let SelfCounter x =
+  let (s, setS) = useState x in
+  print s;
+  useEffect (
+    print "Effect";
+    if s < 3 then
+      setS (fun s -> s + 1));
+  print "Return";
+  [s];;
+SelfCounter 0
+    \end{reactcode}
+  \end{minipage}
+  \begin{minipage}{.3\linewidth}
+    \begin{console}
+0
+Return
+Effect
+1
+Return
+Effect
+2
+Return
+Effect
+3
+Return
+Effect
+    \end{console}
+  \end{minipage}
+\end{center}
+This example demonstrates that Effects can create render cycles \emph{without any user interaction.}
+Initially, the value of~\verb+s+,~0 is printed, followed by \verb+Return+ and \verb+Effect+ messages, showing that the Effect runs after the initial render.
+After the Effect runs, it updates the state when~\verb+s < 3+, triggering a new render automatically.
+The component autonomously increments from~0 to~3 without any user interaction.
+When~\verb+s+ reaches~3, the Effect still runs (as shown by the final \verb+Effect+ output), but no further updates are queued.
+
+This pattern creates a dangerous pitfall:
+\begin{quote}
+  \emph{Developers can unwittingly trigger excess render cycles with seemingly innocent Effects.}
+\end{quote}
+Our formal semantics in~\cref{chap:sem} captures these patterns, helping developers reason about when and how these cycles occur in their programs.
+We explore how this pitfall leads to bugs in~\cref{subsec:infloop,sec:unnec}.

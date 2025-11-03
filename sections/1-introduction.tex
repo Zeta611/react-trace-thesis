@@ -1,0 +1,90 @@
+\chapter{Introduction}\label{chap:intro}
+\section{Overview of React}
+React (\href{https://react.dev/}{react.dev}) is the most widely used framework for developing web-based graphical user interfaces (GUI) today \citep{Sta24Stack}.
+React developers structure the UI as a tree of \emph{components,} where each component serves as a \emph{functional} specification that declaratively defines a portion of the UI and its behavior.
+To declare user interactions in a component, developers use \emph{Hooks}, a collection of library functions that ``hooks into'' the runtime to manage state and handle side effects within components.
+
+A React component is a function that serves as a declarative specification of a UI, which is read by the React runtime to render the interface.
+The process of ``reading'' this specification is nothing special---the runtime directly invokes the component, which is a plain function.
+When these components are called with appropriate arguments, they return a data structure representing how the component should appear on the screen.
+Ideally, when a component is called with the same arguments, it should render the same interface \citep{Cac16React}.
+
+This functional approach differs significantly from traditional object-oriented UI frameworks.
+In object-oriented frameworks like Flutter (\href{https://flutter.dev/}{flutter.dev}), Qt (\href{https://www.qt.io/}{qt.io}), UIKit (\href{https://developer.apple.com/documentation/uikit/}{developer.apple.com}), or even legacy versions of React \citep{Met25Component,MadLhoTip20Semantics}, components are modeled with classes, where each view directly corresponds to an instance of a class.
+Developers define different methods to be called at different lifecycle phases---such as initialization, state update, etc.---creating a clear separation.
+
+React, however, introduces a different model: a single function component plays multiple roles---the same component is called for both creating a new view and updating an existing view.
+To enable this, React switches between different implementations of the same Hook at runtime depending on the rendering phase.
+
+\begin{wrapfigure}[4]{l}{0.387\linewidth}
+  \vspace*{-1.2\intextsep}
+  \begin{reactcode}
+function Counter({ x }) {
+  const [s, setS] = useState(() => x);
+  const h = () => setS((s) => s+1);
+  return <button onClick={h}> {s}
+    </button>; }
+  \end{reactcode}
+\end{wrapfigure}
+\noindent The \reacttt{Counter} component on the left demonstrates the \reacttt{useState} Hook for managing state.
+This simple component increments its state~\reacttt{s} each time the button is clicked.
+When first rendered, \reacttt{useState} returns an initial value from the initializer function~\reacttt{() => x}.
+Here,~\reacttt{s} captures the current state, and \reacttt{setS}~accepts an updater to set a new state.
+In subsequent renders, \reacttt{useState} automagically ``remembers'' the previous state and returns it instead.
+\reacttt{button} is correctly rendered with new~\reacttt{s}, by efficiently diffing the returned \reacttt{button}---this is called \emph{reconciliation} \citep{Met25Reconciliation}.
+This example illustrates how even a simple component like \reacttt{Counter} has different semantics across lifecycle phases.
+
+Another peculiarity is that developers \emph{cannot} use JavaScript (JS) variables and direct assignments to manage a component's state.
+In the above example, assigning a new value to~\reacttt{s} does not update the state of~\reacttt{Counter}---\reacttt{setS} must be used to update the state.
+
+\begin{wrapfigure}[8]{r}{0.44\linewidth}
+  \vspace*{-.8\intextsep}
+  \begin{reactcode}
+function Cond() {
+  const [b, setB] = useState(() => false);
+  if (b) {
+    const [s, setS] = useState(() => 0);
+    return s;
+  } else {
+    const h = () => setB(b => !b);
+    return <button onClick={h}> Show
+      </button>; } }
+  \end{reactcode}
+\end{wrapfigure}
+Moreover, developers must adhere to specific rules imposed by React, collectively known as the \emph{Rules of React} \citep{Met25Rules}.
+These rules represent invariants that components must maintain for React to properly manage the UI.
+The \reacttt{Cond} component on the right violates one of these rules on line~4 by calling \reacttt{useState} conditionally inside the \reacttt{if}~branch.
+React requires that all Hooks be called unconditionally at the top-level of a component, ensuring they execute in the same order on every render.
+Initially, \reacttt{Cond} will show a button to toggle the Boolean state~\reacttt{b} from \reacttt{false} to \reacttt{true}.
+When you click ``Show'' (setting~\reacttt{b} to \reacttt{true}), instead of displaying the initial state of~\reacttt{s} which is~|0|, the UI breaks down at runtime.
+This stems from React's implementation detail where each Hook call is identified by its position in a linked list of internal bookkeeping objects.
+
+
+\section{The Problem}
+Hooks have subtle semantics, making it challenging to avoid unexpected behaviors.
+The rendering process is opaque---it is unclear \emph{how} React registers updates or \emph{when} re-renders occur.
+Therefore, React developers must follow specific rules or risk breaking their UI (detailed in~\cref{chap:pit}).
+Worse yet, the host language is oblivious to React's rules, so it's up to programmers to adhere to them.
+Without a clear understanding of the underlying mechanisms, developers must rely on informal resources that typically provide high-level guides rather than explanations of the render semantics, leaving even experienced developers vulnerable to misconceptions about how Hooks actually work.
+
+
+\section{Our Solution}
+We present \Rtrace, an operational semantics of React Hooks:
+\begin{itemize}
+  \item \textbf{\Rtrace{} is a semantics for clarifying the behavior of React Hooks.}
+    \Rtrace{} is \emph{high-level enough} to abstract away implementation details and \emph{precise enough} to aid developers in reasoning about rendering behavior~(\cref{sec:example}).
+    Our semantics helps developers clearly understand confusing UI bugs like infinite re-rendering~(\cref{chap:pit}).
+
+  \item \textbf{\Rtrace{} is a foundation for building semantic-based tools.}
+    \Rtrace{} provides a semantics for React Hooks~(\cref{chap:sem}), which is the first step in designing any semantic-based tool, such as an abstract interpreter \citep{CouCou77Abstract,RivYi20Introduction}.
+    As an example for a semantic-based tool based on \Rtrace, we present an interactive tool that explains and visualizes the behavior of React programs~(\cref{chap:impl}).
+
+  \item \textbf{\Rtrace{} captures the essence of React.}
+    We prove that \Rtrace{} conforms to the key properties of React according to the documentation, as well as presenting an empirical conformance test suite~(\cref{chap:rules}).
+\end{itemize}
+
+
+\paragraph{Organization}
+We introduce \reacttt{useState} and \reacttt{useEffect} and describe challenges in understanding them in~\cref{chap:over}, and illustrate common pitfalls from their interactions in~\cref{chap:pit}.
+We formalize React Hook semantics in~\cref{chap:sem}, present a \Rtrace-definitional interpreter and visualizer in~\cref{chap:impl}, and demonstrate conformance with React in~\cref{chap:rules}.
+We discuss extensions and implications in~\cref{chap:discussion}, compare with related work in~\cref{chap:related}, and conclude with future work in~\cref{chap:conclusion}.

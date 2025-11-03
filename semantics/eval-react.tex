@@ -1,0 +1,116 @@
+\inferrule[AppFunc]{
+  \Step{e_1}{\clos{x}{e}{\sigma'}, \Sigma_1, \omega_1} \\
+  \Step[\Sigma_1, \sigma]{e_2}{v_2, \Sigma_2, \omega_2} \\
+  \Step[\Sigma_2, \sigma'[x \mapsto v_2]]{e}{v', \Sigma', \omega'}
+}{
+  \Step{\app{e_1}{e_2}}{v', \Sigma', \omega_1 \concat \omega_2 \concat \omega'}
+} \and
+\inferrule[AppCom]{
+  \Step{e_1}{C, \Sigma_1, \omega_1} \\
+  \Step[\Sigma_1, \sigma]{e_2}{v, \Sigma_2, \omega_2}
+}{
+  \Step{\app{e_1}{e_2}}{\<C, v\>, \Sigma_2, \omega_1 \concat \omega_2}
+} \and
+\inferrule[AppSetComp]{
+  \Step[\pi, \sigma]{e_1}{\<\ell, p\>, \pi_1, \omega_1} \\
+  \Step[\pi_1, \sigma]{e_2}{cl, \pi_2, \omega_2} \\
+  \phi \in \{\phase{Init}, \phase{Succ}\}
+}{
+  \Step[\pi, \sigma]{\app{e_1}{e_2}}{
+    \<\>,
+    \pi_2\!\left\{
+      \begin{spreadlines}{0pt}
+        \begin{lgathered}
+          \text{let $\rho = \pi_2.\field{sttst},\ vq = \rho[\ell]$ in} \\
+          \begin{aligned}
+            \field{dec} &\colon \pi_2.\field{dec} \cup \{\dec{Check}\} \\
+            \field{sttst} &\colon \rho[\ell \mapsto vq\{\fv{sttq}{vq.\field{sttq} \concat [cl]}\}]
+          \end{aligned}
+        \end{lgathered}
+      \end{spreadlines}
+    \right\},
+    \omega_1 \concat \omega_2
+  }
+} \and
+\inferrule[AppSetNormal]{
+  \Step<\phase{Normal}><->[m, \sigma]{e_1}{\<\ell, p\>, m_1, \omega_1} \\
+  \Step<\phase{Normal}><->[m_1, \sigma]{e_2}{cl, m_2, \omega_2} \\
+}{
+  \Step<\phase{Normal}><->[m, \sigma]{\app{e_1}{e_2}}{
+    \<\>,
+    m_2\!\left[
+      \begin{spreadlines}{0pt}
+        \begin{lgathered}
+          \text{let $\pi = m_2[p],\ \rho = \pi.\field{sttst},\ vq = \rho[\ell]$ in} \\
+          p \mapsto \pi\!\left\{
+            \begin{aligned}
+              \field{dec} &\colon \pi.\field{dec} \cup \{\dec{Check}\} \\
+              \field{sttst} &\colon \rho[\ell \mapsto vq\{\fv{sttq}{vq.\field{sttq} \concat [cl]}\}]
+            \end{aligned}
+          \right\}
+        \end{lgathered}
+      \end{spreadlines}
+    \right],
+    \omega_1 \concat \omega_2
+  }
+} \and
+\inferrule[SttBind]{
+  \Step<\phase{Init}>[\pi, \sigma]{e_1}{v_1, \pi_1, \omega_1} \\
+  \Step<\phase{Init}>[{
+    \begin{spreadlines}{0pt}
+      \pi_1\!\left\{
+        \fv{sttst}{
+          \pi_1.\field{sttst}\!\left[\ell \mapsto \sttstent*{v_1}{[]}\right]
+        }
+      \right\}\!,
+      \sigma\!\left[
+        \begin{aligned}
+          x &\mapsto v_1 \\
+          x_{\textsf{set}} &\mapsto \<\ell, p\>
+        \end{aligned}
+      \right]
+    \end{spreadlines}
+  }]{e_2}{v_2, \pi_2, \omega_2}
+}{
+  \Step<\phase{Init}>[\pi, \sigma]{\stbind[\ell]{x}{e_1}{e_2}}{v_2, \pi_2, \omega_1 \concat \omega_2}
+} \and
+\inferrule[SttReBind]{
+  \pi_0.\field{sttst}[\ell] = \bigl\{
+    \fv{val}{v_0},\:\fv{sttq}{[\Overline{\clos{x_i}{e'_i}{\sigma_i}}]_{i = 1}^n}
+  \bigr\} \\
+  \bigl(\Step[\pi_{i-1}, \sigma_i[x_i \mapsto v_{i-1}]]{e'_i}{v_i, \pi_i, \omega_i}\bigr)_{i = 1}^n \\
+  \Step[{
+    \begin{spreadlines}{0pt}
+      \pi_n\!\left\{
+        \begin{aligned}
+          \field{dec} &\colon \pi_n.\field{dec} \cup \scond{v_n \not\equiv v_0 }{\{\dec{Effect}\}}{\emptyset} \\
+          \field{sttst} &\colon \pi_n.\field{sttst}[\ell \mapsto \sttstent{v_n}{[]}]
+        \end{aligned}
+      \right\}\!,
+      \sigma\!\left[
+        \begin{aligned}
+          x &\mapsto v_n \\
+          x_{\textsf{set}} &\mapsto \<\ell, p\>
+        \end{aligned}
+      \right]
+    \end{spreadlines}
+  }]{e_2}{v, \pi', \omega'}
+}{
+  \Step<\phase{Succ}>[\pi_0, \sigma]{\stbind{x}{e_1}{e_2}}{v, \pi', ({\textstyle\Concat_{i = 0}^n \omega_i}) \concat \omega'}
+} \and
+\inferrule[Eff]{
+  \phi \in \{\phase{Init}, \phase{Succ}\}
+}{
+  \Step[\pi, \sigma]{\eff{e}}{
+    \begin{spreadlines}{0pt}
+      \<\>,
+      \pi\{ \fv{effq}{\pi.\field{effq} \concat [\clos{\_}{e}{\sigma}]} \},
+      []
+    \end{spreadlines}
+  }
+} \and
+\inferrule[Print]{
+  \Step{e}{v, \Sigma', \omega}
+}{
+  \Step{\print{e}}{\<\>, \Sigma', \omega \concat [v]}
+}

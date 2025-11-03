@@ -1,0 +1,716 @@
+\chapter{Full Operational Semantics of \Rtrace}\label{app:chap:full}
+\section{Semantic Objects}\label{app:sec:dom}
+\begin{center}
+  \begin{bnf}[rccll]
+    v : $\dom{Val}$ ::=
+    | $k$ : constant values
+    | $cl$ : closure
+    | $C$ : component name
+    | $cs$ : component spec
+    | $[\Overline{s}]$ : view spec list
+    | $\<\ell, p\>$ : setter closure
+    ;;
+    k : $\dom{Const}$ ::= $\<\>$ // $\TT$ // $\FF$ // $n$ : constant values
+    ;;
+    cl : $\dom{Clos}$ ::=
+    | $\clos{x}{e}{\sigma}$ : closure
+    ;;
+    \sigma : $\dom{Env}$ ::= $[\Overline[\ell]{x \mapsto v}]$ : environment
+    ;;
+    cs : $\dom{ComSpec}$ ::=
+    | $\<C, v\>$ : component spec
+    ;;
+    s : $\dom{ViewSpec}$ ::= $k$ // $cl$ // $[\Overline{s}]$ // $cs$ : view spec
+    ;;
+    \delta : $\dom{DefTable}$ ::= $[\Overline[\ell]{C \mapsto \deftabent{x}{e}}]$ : component def table
+    ;;
+    \ell :in: $\mathbb{N}$ : label
+    ;;
+    p :in: $\dom{Path}$ : tree path
+    ;;
+    m : $\dom{TreeMem}$ ::= $[\Overline[\ell]{p \mapsto \pi}]$ : tree memory
+    ;;
+    \pi : $\dom{View}$ ::= $\view{cs}{\{\Overline{d}\}}{\rho}{q}{t}$ : state environment
+    ;;
+    d : $\dom{Decision}$ ::= \dec{Check} // \dec{Effect} : decision
+    ;;
+    t : $\dom{Tree}$ ::= $k$ // $cl$ // $[\Overline{t}]$ // $p$ : tree
+    ;;
+    \rho : $\dom{SttStore}$ ::= $[\Overline[\ell]{\ell \mapsto \sttstent{v}{q}}]$ : state store
+    ;;
+    q : $\dom{JobQ}$ ::= $[\Overline[\ell]{cl}]$ : job queue
+    ;;
+    \Sigma : $\dom{Context}$ ::= $m$ // $\pi$ : evaluation context
+    ;;
+    \phi : $\dom{Phase}$ ::= \phase{Init} // \phase{Succ} // \phase{Normal} : phase
+    ;;
+    \mu : $\dom{Mode}$ ::= $\rendermode$ \textrm{(rendered)} // $\checkmode$ \textrm{(check)} // $\eloopmode$  \textrm{(event loop)} : runtime mode
+  \end{bnf}
+\end{center}
+
+
+\section{Operational Semantics}\label{app:sec:sem}
+\begin{center}
+  \input{semantics/step}
+\end{center}
+
+\begin{center}
+  % NOTE: handlers
+  \hfill\fbox{$\sem{handlers}(m, t) = \{\Overline[\ell]{cl}\}$}
+  \[
+    \sem{handlers}(m, t) = \begin{dcases*}
+      \{\} & if $t = k$ \\
+      \{ cl \} & if $t = cl$ \\
+      \bigcup_{i = 1}^n \sem{handlers}(m, t_i) & if $t = [\Overline{t_i}]_{i = 1}^n$ \\
+      \sem{handlers}(m, m[p].\field{children}) & if $t = p$
+    \end{dcases*}
+  \]
+\end{center}
+
+\begin{center}
+  \hfill\fbox{$\Step<\phi><p>[\Sigma, \sigma]{e}{v, \Sigma', \omega}$}
+  \begin{mathparpagebreakable}
+    \inferrule[Unit]{ }{\Step{\texttt{()}}{\<\>, \Sigma}, []} \and
+    \inferrule[True]{ }{\Step{\texttt{true}}{\TT, \Sigma}, []} \and
+    \inferrule[False]{ }{\Step{\texttt{false}}{\FF, \Sigma}, []} \and
+    \inferrule[Int]{ }{\Step{n}{n, \Sigma}, []} \and
+    \inferrule[Var]{ }{\Step{x}{\sigma(x), \Sigma}, []} \and
+    \inferrule[Bop]{
+      \Step[\Sigma, \sigma]{e_1}{n_1, \Sigma_1, \omega_1} \\
+      \Step[\Sigma_1, \sigma]{e_2}{n_2, \Sigma_2, \omega_2} \\
+      \text{$f_\oplus \in \mathbb{Z} \times \mathbb{Z} \to \mathbb{Z}$}
+    }{\Step[\Sigma, \sigma]{e_1 \oplus e_2}{f_\oplus(n_1, n_2), \Sigma_2, \omega_1 \concat \omega_2}} \and
+    \inferrule[Cond]{
+      \Step[\Sigma, \sigma]{e_1}{b, \Sigma', \omega} \\
+      \Step[\Sigma', \sigma]{\scond{b}{e_2}{e_3}}{v, \Sigma'', \omega'}
+    }{
+      \Step[\Sigma, \sigma]{\cond{e_1}{e_2}{e_3}}{v, \Sigma'', \omega \concat \omega'}
+    } \and
+    \inferrule[Func]{ }{\Step[\Sigma, \sigma]{\func{x}{e}}{\clos{x}{e}{\sigma}, \Sigma, []}} \and
+    \inferrule[Seq]{
+      \Step[\Sigma, \sigma]{e_1}{\_, \Sigma_1, \omega_1} \\
+      \Step[\Sigma_1, \sigma]{e_2}{v_2, \Sigma_2, \omega_2}
+    }{\Step[\Sigma, \sigma]{\seq{e_1}{e_2}}{v_2, \Sigma_2, \omega_1 \concat \omega_2}} \and
+    \inferrule[List]{
+      \bigl(\Step[\Sigma_{i-1}, \sigma]{e_i}{s_i, \Sigma_i, \omega_i}\bigr)_{i = 1}^n
+    }{
+      \Step[\Sigma_0, \sigma]{
+        [\Overline{e_i}]_{i = 1}^n}{[\Overline{s_i}]_{i = 1}^n, \Sigma_n, {\textstyle\Concat_{i = 1}^n \omega_i}
+      }
+    } \and
+    \inferrule[LetBind]{
+      \Step{e_1}{v_1, \Sigma_1, \omega_1} \\
+      \Step[\Sigma_1, \sigma[x \mapsto v_1]]{e_2}{v_2, \Sigma_2, \omega_2}
+    }{
+      \Step{\letbind{x}{e_1}{e_2}}{v_2, \Sigma_2, \omega_1 \concat \omega_2}
+    } \and
+    \input{semantics/eval-react}
+  \end{mathparpagebreakable}
+\end{center}
+
+\begin{center}
+  \input{semantics/evalmult}
+\end{center}
+
+\begin{center}
+  \input{semantics/init}
+\end{center}
+
+\begin{center}
+  \input{semantics/check}
+\end{center}
+
+\begin{center}
+  \input{semantics/reconcile}
+\end{center}
+
+\begin{center}
+  \input{semantics/commitEffs}
+\end{center}
+
+
+\chapter{Proofs of Theorems}\label{app:chap:proofs}
+\begin{defn}[$e$-Equivalent Views]\label{def:equiv}
+  Views~$\pi$ and~$\pi'$ are $e$-equivalent when the state entries whose labels appear in~$e$ are the same.
+  That is,
+  \[
+    \pi \equiv_e \pi'
+    \triangleiff
+    \forall \ell \in \sem{labels}(e),\ \pi.\field{sttst}[\ell] = \pi'.\field{sttst}[\ell]. \qedhere
+  \]
+\end{defn}
+
+\begin{defn}[$t$-Equivalent Memories]\label{def:memequiv}
+  Tree memories~$m$ and~$m'$ are $t$-equivalent iff the descendant views of~$t$ in~$m$ and~$m'$ are the same.
+  That is,
+  \[
+    m \equiv_t m'
+    \triangleiff
+    \forall p \in \sem{reachable}(m,t), m[p] = m'[p] \qedhere
+  \]
+\end{defn}
+
+\begin{lem}[Similar Evaluations]\label{lem:simeval}
+  Evaluations of~$e$ in~\phase{Succ} phase with similar views as a context produce identical values and output buffers, along with $e$-equivalent views.
+  That is, if $\Step<\phase{Succ}>[\pi,\sigma]{e}{v,\pi',\omega}$,
+  then for any $\hat\pi \approx \pi$, we have
+  $\Step<\phase{Succ}>[\hat \pi,\sigma]{e}{v,\hat \pi',\omega}$ where $\hat\pi' \equiv_e \pi'$.
+\end{lem}
+
+\begin{proof}
+  Suppose we have $\Step<\phase{Succ}>[\pi,\sigma]{e}{v,\pi',\omega}$ and choose some $\hat\pi \approx \pi$.
+  We need to show that $\hat v = v$, $\hat\pi' \equiv_e \pi'$, and $\hat\omega = \omega$, where $\Step<\phase{Succ}>[\hat\pi,\sigma]{e}{\hat v,\hat\pi',\hat\omega}$.
+
+  We prove that $\hat v = v$, $\hat\pi' \approx \pi'$ (before showing $\hat\pi' \equiv_e \pi'$), and $\hat\omega = \omega$ by rule induction.
+  We put a~$\hat\cdot$ on the intermediate variables in the derivation of~$\Step<\phase{Succ}>[\hat\pi,\sigma]{e}{\hat v,\hat\pi',\hat\omega}$.
+  \begin{description}
+    \item[{\normalfont\Rule{Print}}]
+      Evaluations of~$e$ produce same values~$\hat v = v$ and output buffers~$\hat \omega = \omega$ with similar views~$\hat\pi' \approx \pi'$ by the IH.
+      Appending the same values to the same output buffers results in the same buffers~$\hat\omega \concat [\hat v] = \omega \concat [v]$.
+      Resulting values are both~$\<\>$.
+      Contexts---views in this case---are unmodified.
+
+    \item[{\normalfont\Rule{AppSetComp}}]
+      Evaluations of~$e_1$ and~$e_2$ produce same values~$\<\hat\ell, \hat p\> = \<\ell, p\>$ and $\hat{cl} = cl$, and output buffers~$\hat\omega_1 = \omega_1$ and $\hat\omega_2 = \omega_2$, and similar views~$\hat\pi_1 \approx \pi_1$ and $\hat\pi_2 \approx \pi_2$ by the IH.
+      Concatenations of the same output buffers result in the same buffers~$\hat\omega_1 \concat \hat\omega_2 = \omega_1 \concat \omega_2$.
+      Appending the same closures~$\hat{cl} = cl$ to the state update queues of similar views~$\hat\pi_2 \approx \pi_2$ produces similar views.
+      (The added \dec{Check}s are discarded anyway during normalization.)
+      Resulting values are both~$\<\>$.
+
+    \item[{\normalfont\Rule{SttReBind}}]
+      Evaluations of the queued~$e_i'$s all produce the intermediate values~$\hat v_i = v_i$ and output buffers~$\hat \omega_i = \omega_i$ that are equivalent and views~$\hat\pi_i \approx \pi_i$ that are similar by the IH.
+      Then the modified~$\hat\pi_n$ and~$\pi_n$ each modified with the added \dec{Effect} and the same state~$\hat v_n = v_n$ are still similar.
+      This suffices to apply the IH to the evaluation of~$e_2$, resulting in the same values~$\hat v = v$ and output buffers~$\hat\omega' = \omega'$, and similar views~$\hat\pi' \approx \pi'$.
+      Thus the resulting values~$\hat v = v$ and the concatenation of the buffers~$(\concat_{i=1}^n \hat \omega_i) \concat \hat\omega' = (\concat_{i=1}^n \omega_i) \concat \omega'$ are equivalent, and the resulting views~$\hat\pi' \approx \pi'$ are similar.
+  \end{description}
+  The remaining cases are trivial.
+
+  It is easy to show that if~$\pi$ and~$\hat \pi$ are similar and $e$-equivalent for some~$e$, then the results are also $e$-equivalent using rule induction.
+
+  Now we can prove that $\hat\pi' \equiv_e \pi'$, again using rule induction.
+  In each case, evaluation of each sub-expression~$e'$ of~$e$ produces $e'$-equivalent views by the IH, and the equivalence is preserved in following evaluations of other sub-expressions.
+  Therefore, the resulting views from~$\pi$ and~$\hat \pi$ are $e'$-equivalent for every sub-expression~$e'$, which makes the resulting~$\pi'$ and~$\hat \pi'$ $e$-equivalent.
+  Note that nested or dead sub-expressions of~$e$ do not contain state labels~$\ell$, due to the syntactic restriction that Hooks can only appear at the top level of a component body.
+
+  The only noteworthy case is \Rule{SttReBind} where a state label exists.
+  In this case, the state store entry for~$\ell$ is updated directly to the same value~$v_n$ (as just shown above) in both derivations from~$\pi$ and~$\hat \pi$.
+  Therefore, the resulting~$\pi'$ and~$\hat \pi'$ have the same state store entry for~$\ell$.
+\end{proof}
+
+\simevallem*
+
+\begin{proof}
+  Suppose $\Step*<\phase{Succ}>[\pi,\sigma[x\mapsto v]]{e}{v,\pi',\omega}$ and $\Step*<\phase{Succ}>[\hat \pi,\sigma[x\mapsto v]]{e}{\hat v',\hat \pi', \hat \omega}$, for some~$\pi$ such that~$\pi.\field{spec} = \<C, v\>$ where~$\delta[C] = \<\lfun{x}{e}, \sigma\>$ and~$\hat\pi \approx \pi$.
+  By \cref{lem:simeval}, evaluations of~$e$ produce $e$-equivalent views, that is, the states whose labels appear in~$e$ are the same in~$\pi'$ and~$\hat \pi'$.
+  Since~$\pi'$ and~$\hat \pi'$ are valid under~$\delta$, the only labels that~$\pi'$ and~$\hat \pi'$ have are those appearing in~$e$.
+  Therefore, $\pi' = \hat \pi'$.
+  Similarly, $v' = \hat v'$ and $\omega = \hat \omega$.
+  Any remaining loops, if present, are evaluated under identical views, trivially producing the same results.
+\end{proof}
+
+\begin{defn}[Stability and Semi-Stability]\label{def:stability}
+  A view~$\pi$ is \emph{stable} iff the re-evaluation of~$\pi$'s body (as in \Rule{EvalOnce} and \Rule{EvalMult}) produces the same view as $\pi$:
+  \begin{multline*}
+    \Step[\pi\{\fv{dec}{\pi.\field{dec}\setminus\{\dec{Check}\}},\fv{effq}{[]}\}, \sigma[x\mapsto v]]{e}{\_, \pi, \omega} \\
+    \text{where $\pi.\field{spec} = \<C,v\>$ and $\delta[C] = \<\lambda x.e,\sigma\>$.}
+  \end{multline*}
+
+  View~$\pi$ is \emph{semi-stable} iff $\pi$ with empty state update queues is stable.
+
+  We extend this notion to tree memory:
+  $m$ is~\emph{$t$-stable} iff the descendant views of~$t$ in~$m$ are all stable, and \emph{$t$-semi-stable} iff the descendant views of~$t$ in~$m$ are all semi-stable.
+
+  Since component body of a stable view can be re-evaluated in an idempotent way, evaluation of the body can be thought of as ``reading'' the specification of the view.
+\end{defn}
+
+\begin{defn}[Coherence]\label{def:coherence}
+  A view is \emph{coherent} if its decision is coherent with the status of the state update queue.
+  That is, a coherent view~$\pi$ satisfies the predicate
+  \[
+    \dec{Check} \in \pi.\field{dec}
+    \qquad\longleftrightarrow\qquad
+    \exists \ell \in \domain \rho,\ \rho[\ell].\field{sttq} \neq []
+    \quad \text{where $\rho = \pi.\field{sttst}$.}
+  \]
+
+  We extend this notion to tree memory, i.e., $m$ is \emph{$t$-coherent} iff the descendants of~$t$ in~$m$ are coherent.
+\end{defn}
+
+\begin{restatable}[Preservation of Validity]{lem}{validprop}\label{lem:valid}
+  If $\<e,\delta\> \smallstep^* \<t,m,\omega,\delta,\mu\>$, then~$m$ is valid under~$\delta$.
+\end{restatable}
+
+\begin{proof}
+  The only rule that adds states is \Rule{SttBind},
+  which appears only in the derivation of $\sem{init}$ where the context being a fresh view.
+  Therefore, it is sufficient to check that the evaluation of the component body in $\phase{Init}$ produces a valid view.
+  Due to the syntactic restriction on the usage of Hooks, every |useState| Hook is executed during the evaluation, adding its state labeled~$\ell$ to the view.
+  This process adds every label in the expression to the view, producing a valid view.
+\end{proof}
+
+\begin{lem}[Semi-Stability and Normalized Form]\label{lem:stabnorm}
+  Let~$\pi$ be a semi-stable view valid under~$\delta$, and let~$\hat\pi = \sem{normalize}(\pi)$.
+  If $\dec{Check} \notin \hat\pi.\field{dec}$, then the evaluation of the body produces a view exactly the same as the normalized form.
+  That is, $\Step*<\phase{Succ}>[\pi\{\fv{dec}{\pi.\field{dec} \setminus \{\dec{Check}\}},\fv{effq}{[]}\}, \sigma[x\mapsto v]]{e}{\_,\hat\pi, \omega}$ where~$\pi.\field{spec} = \<C,v\>$ and~$\delta[C] = \<\lfun x e, \sigma\>$.
+\end{lem}
+
+\begin{proof}
+  The normalized view~$\hat\pi$ is the same as~$\pi$ except that the decision and state update queues are empty---$\dec{Check} \notin \hat\pi.\field{dec}$ implies also $\dec{Effect} \notin \hat\pi.\field{dec}$ from \cref{def:normalization}.
+  Thus~$\hat\pi$ is stable as~$\pi$ is semi-stable.
+  By \cref{def:stability}, evaluation with~$\hat\pi$ produces~$\hat\pi$ again, which also holds for retrying evaluation.
+  Since~$\pi \approx \hat\pi$, by \cref{lem:simevalbody}, $\pi' = \hat\pi$.
+\end{proof}
+
+
+\begin{lem}[Stability of Retrying Evaluation]\label{lem:stab}
+  Let~$\pi.\field{spec} = \<C,v\>$ and~$\delta[C] = \<\lambda x.e,\sigma\>$.
+  If~$\pi$ is semi-stable and $\Step*[\pi,\sigma[x\mapsto v]]{e}{v',\pi', \omega}$,
+  then~$\pi'$ is stable.
+\end{lem}
+
+\begin{proof}
+  It is sufficient to show that the last evaluation of the component body produces a stable view.
+  Since~$\dec{Check} \notin \pi'.\field{dec}$, \Rule{AppSetComp} is not included in the derivation and all state updates in~$\pi$ are pure.
+  This means~$\sem{normalize}(\pi)$ has empty queues.
+  Since~$\pi \approx \sem{normalize}(\pi)$, by the \cref{lem:stabnorm}, $\pi' = \sem{normalize}(\pi)$,
+  which is stable.
+\end{proof}
+
+\begin{lem}[Preservation of Semi-Stability]\label{lem:semistab}
+  If $\<e,\delta\> \smallstep^* \<t,m,\omega,\delta,\mu\>$, then~$m$ is $t$-semi-stable.
+\end{lem}
+
+\begin{proof}
+  It is sufficient to show that the initial step generates a semi-stable tree memory, and derivation of each step preserves the semi-stability.
+  \begin{description}
+    \item[{\normalfont\Rule{StepInit}, \Rule{StepCheck}}]
+      By \cref{lem:stab}, evaluation of each component body produces stable view.
+      Updating views' children or adding decisions does not break the stability, so views modified by $\sem{init}$ and $\sem{visit}$ are always stable.
+    \item[{\normalfont\Rule{StepEffect}, \Rule{StepEvent}}]
+      The only rule modifying the view during normal evaluation is \Rule{AppSetNormal}.
+      It only adds state updates or modify the decision of a view, which preserves semi-stability of the view. \qedhere
+  \end{description}
+\end{proof}
+
+\begin{remark}
+  While the semi-stability of memory is always preserved, the stability is often violated.
+  When setter closures are applied during the execution of Effects or event handlers,
+  the update functions are queued,
+  which are flushed and applied during the next check.
+  Note that the memory is indeed always stable after the check.
+\end{remark}
+
+\begin{restatable}[Preservation of Coherence]{lem}{coherence}\label{lem:coherence}
+  If $\<e,\delta\> \smallstep^* \<t,m,\omega,\delta,\mu\>$, then~$m$ is $t$-coherent.
+  That is, $\sem{init}$ and $\sem{visit}$ always produce~$t$-coherent tree memory.
+\end{restatable}
+
+\begin{proof}
+  It is sufficient to show that the initial step generates a coherent tree memory, and the derivation of each step preserves the coherence.
+  \begin{description}
+    \item[{\normalfont\Rule{StepInit}}]
+      A retrying evaluation of the component body produces a view whose decision does not include $\dec{Check}$ and state queues are empty, thus coherent.
+      The result of $\sem{init}$ only contains new views.
+      Therefore, the resulting memory $m$ is $t$-coherent.
+    \item[{\normalfont\Rule{StepCheck}}]
+      As stated above, the views whose bodies are evaluated are coherent.
+      Views that are not evaluated are left as is in $m'$, thus preserving coherence.
+      Therefore, each coherence of the views in the resulting memory $m'$ is preserved.
+    \item[{\normalfont\Rule{StepEffect}, \Rule{StepEvent}}]
+      The only rule modifying the view during normal evaluation is \Rule{AppSetNormal}. It adds a state update and adds $\dec{Check}$ decision to the view, which preserves the coherence of the view. \qedhere
+  \end{description}
+\end{proof}
+
+
+
+\begin{lem}[Similar Reconciliations]\label{lem:reconsim}
+  Reconciling with similar memories produces the equivalent results.
+  That is, if $m \vdash \sem{reconcile}(t,s)=\<t',m', \omega\>$,
+  then for $\hat m$ such that $m \approx_t \hat m$,
+  $\hat m \vdash \sem{reconcile}(t,s) = \<t',\hat m', \omega\>$ and
+  $m' \equiv_{t'} \hat m'$.
+\end{lem}
+
+\begin{proof}
+  We proceed with induction on the derivation of $m \vdash \sem{reconcile}(t,s)=\<t',m', \omega\>$.
+  \begin{description}
+    \item[{\normalfont\Rule{ReconcileComNew}, \Rule{ReconcileOther}}]
+      \sem{init}(s) does not read or modify existing views in $m$; it only adds new views to $m$.
+      All new views are descendants of $t'$, and are the same in $m'$ and $\hat m'$.
+      Since the evaluation contexts are identical, the output buffers are also the same.
+    \item[{\normalfont\Rule{ReconcileList}}]
+      Each derivation of $\sem{reconcile}(t_i,s_i)$ produces the same tree, the same output buffer, and $t'_i$-equivalent memories.
+      Therefore, the final trees and the output buffers are the same and the final memories are $[\Overline{t'_i}]_{i=1}^n$-equivalent.
+    \item[{\normalfont\Rule{ReconcileComEffect}}]
+      The derivation of $\Bigstep*{\phi}{p}$ produces the same $v$, $\pi'$, and $\omega$ by \cref{lem:simevalbody} and $\sem{reconcile}(t,s)$ produces the same tree and output buffer with $t'$-equivalent memories by IH.
+      Therefore, the final memories are also $t'$-equivalent. \qedhere
+  \end{description}
+\end{proof}
+
+\begin{lem}[Similar Checks]\label{lem:simvisit}
+  Checking with similar memories produces the equivalent results.
+  That is, for similar memories $m$ and $\hat m$ that are $t$-coherent and $t$-semi-stable and have no view with \dec{Effect} decision set,
+  if $m, \delta \vdash \sem{check}(t)=\<\mu,m', \omega\>$,
+  then $\hat m, \delta \vdash \sem{check}(t) = \<\mu,\hat m', \omega'\>$ and
+  $m' \equiv_{t'} \hat m'$.
+  We also have $\omega = \omega'$ if component bodies do not print.
+\end{lem}
+
+\begin{proof}
+  We proceed with induction on the derivation of $m, \delta \vdash \sem{check}(t)=\<\mu,m', \omega\>$.
+  \begin{description}
+    \item[{\normalfont\Rule{CheckConst}, \Rule{CheckClos}}] These cases are trivial.
+    \item[{\normalfont\Rule{CheckList}}] ($t = [\Overline{t_i}]_{i=1}^n$).
+      Each derivation of $\sem{check}(\hat t_i)$ produces memory, $t'_k$-equivalent to~$m_i$ for~$1 \le k \le i$ and $t'_k$-similar to $m_i$ for $i < k \le n$ by the IHs.
+      As a result, $m_n$ and $\hat m_n$ are $t'_k$-equivalent for~$1 \le k \le n$, therefore $[\Overline{t'_i}]_{i=1}^n$-equivalent.
+    \item[{\normalfont\Rule{CheckIdle}}] ($t = p$, $m[p] = \pi$, and $\hat m[p] = \hat \pi$).
+      Note that $\pi$ is coherent and $\dec{Check} \notin \pi.\field{dec}$, implying that the state update queues are empty.
+      Hence, $\sem{normalize}(\pi) = \pi$.
+      \begin{itemize}
+        \item $\dec{Check} \notin \hat \pi.\field{dec}$:
+          By the IH, $\sem{check}(t)$ produces $t$-equivalent results.
+        \item $\dec{Check} \in \hat \pi.\field{dec}$:
+          By \cref{lem:stabnorm}, $\hat \pi' = \sem{normalize}(\hat \pi)$.
+          Since $\pi \approx \hat \pi$, $\sem{normalize}(\hat \pi) = \sem{normalize}(\pi)$, we have~$\hat\pi' = \pi$.
+          Since no view---including~$\pi$---has \dec{Effect} in~$m$, $\dec{Effect} \notin \hat \pi'.\field{dec}$ as well.
+          Therefore, $\hat m, \delta \vdash \sem{check}(p) = \_$ is derived from \Rule{CheckNoEffect},
+          and thus $\hat m, \delta \vdash \sem{check}(t) = \<b, \hat m', \omega\>$.
+          By the IH, $m' \equiv_t \hat m'$.
+          As a result, the results are $p$-equivalent.
+          Note that we have $\omega = \omega'$ if the component prints nothing.
+      \end{itemize}
+    \item[{\normalfont\Rule{CheckNoEffect}}] ($t = p$, $m[p] = \pi$, and $\hat m[p] = \hat \pi$).
+      \begin{itemize}
+        \item $\dec{Check} \notin \hat \pi.\field{dec}$:
+          The proof is similar to the case of \Rule{CheckIdle} where $\dec{Check} \in \hat m[p].\field{dec}$, except that $m$ and $\hat m$ are swapped.
+        \item $\dec{Check} \in \hat \pi.\field{dec}$:
+          By \cref{lem:simevalbody}, $\hat \pi' = \pi'$ (and $\omega = \omega'$ if componets print nothing),
+          and by the IH, $m' \equiv_p \hat m'$.
+          Therefore, the results are $p$-equivalent.
+      \end{itemize}
+    \item[{\normalfont\Rule{CheckEffect}}] ($t = p$).
+      Since $\sem{normalize}(\hat \pi) = \sem{normalize}(\pi)$ and $\dec{Check} \in \sem{normalize}(\pi).\field{dec}$, $\dec{Check} \in \hat \pi.\field{dec}$.
+      By \cref{lem:simevalbody}, $\pi' = \hat \pi'$,
+      and by \cref{lem:reconsim}, $m' \equiv_p \hat m'$.
+      Therefore, the results are $p$-equivalent. \qedhere
+  \end{description}
+\end{proof}
+
+\simtransthm*
+
+\begin{proof}
+  Since the views not reachable from~$t$ are the same in~$m$ and~$\hat m$ before the transition,
+  and these views remain unchanged, it suffices to show that the memories~$m'$ and~$\hat m'$ resulting from the transition from~$m$ and~$\hat m$, respectively, are $t$-equivalent.
+  The transition from check mode $\checkmode$ is derived by the \sem{check} rules,
+  so we can apply \cref{lem:simvisit}
+  if we can show that the views in $\checkmode$ have no \dec{Effect} decision.
+  Note that~$m$'s $t$-semi-stability and $t$-coherence have already been shown in \cref{lem:semistab,lem:coherence}.
+
+  It also follows from \cref{lem:simvisit} that we have $\omega' = \omega''$ if component bodies do not print.
+
+  We show that only views reachable from the root can contain an \dec{Effect} decision, and such views never contain an \dec{Effect} in check mode $\checkmode$ or event loop mode $\eloopmode$.
+  \begin{description}
+    \item[{\normalfont\Rule{StepInit}}] Every view added by \sem{init} is reachable from the root.
+    \item[{\normalfont\Rule{StepEffect}}] The \sem{commitEffs} rules remove all \dec{Effect} decisions from reachable views.
+    \item[{\normalfont\Rule{StepCheck}}] Only paths that are passed as arguments to \sem{check} or returned by \sem{reconcile} may have their views contain an \dec{Effect} decision,
+    and those views are all reachable after \sem{check} or \sem{reconcile}.
+    If any view receives an \dec{Effect} decision, the \sem{check} rule produces the rendered mode $\rendermode$, to which the state transitions.
+    \item[{\normalfont\Rule{StepEvent}}] The \field{children} and \field{decision} fields are not modified during the \phase{Normal} phase. \qedhere
+  \end{description}
+\end{proof}
+
+\chapter{Comparison of Reactive UI Frameworks}\label{app:sec:frameworks}
+The categorization of reactive GUI web frameworks based on three properties---(a)~whether they re-read component specifications for re-rendering, (b)~how state updates are processed (queued or immediate), and (c)~which reactivity primitives they employ---are given in \cref{tab:frameworks}.
+
+\begin{table}[ht]
+  \centering
+  \caption{Comparison of reactive UI frameworks.}\label{tab:frameworks}
+  \smaller[2]
+  \begin{tabular}{llll}
+    \toprule
+    Framework & Re-read Spec. & State Updates & Reactivity Primitives \\
+    \midrule
+    React & Yes & Queued & Hooks \\
+    Preact & Yes & Queued & Hooks \\
+    Dioxus & Yes & Immediate & Signals \\
+    Solid & No & Immediate & Signals \\
+    Leptos & No & Immediate & Signals \\
+    Angular & No & Immediate & Signals \\
+    Vue & No & Immediate & Signals \\
+    Svelte w/ runes & No & Immediate & Signals \\
+    Svelte w/o runes & No & Immediate & Compiler-assisted \\
+    SwiftUI & Yes & Immediate & Compiler-assisted \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\DefineShortVerb{\+}
+We compare various reactive UI frameworks to
+\begin{enumerate}
+  \item check if state updates are queued or immediate, and
+  \item check if component logic gets re-evaluated every render.
+\end{enumerate}
+\section{React}
++counter+ gets printed every render.
++count+ updates are queued.
+\begin{reactcode}
+import { useState, useEffect } from 'react';
+function Counter() {
+  console.log('counter');
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (count >= 3) {
+      setCount(0);
+    }
+  }, [count]);
+  function h() {
+    console.log(count);
+    setCount(count + 1);
+    console.log(count);
+  }
+  return (
+    <button onClick={h}>
+      {count}
+    </button>
+  );
+}
+\end{reactcode}
+
+
+\section{Preact}
++counter+ gets printed every render.
++count+ updates are queued.
+\begin{reactcode}
+import { useState, useEffect } from 'preact/hooks';
+function Counter() {
+  console.log('counter');
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (count >= 3) {
+      setCount(0);
+    }
+  }, [count]);
+  function h() {
+    console.log(count);
+    setCount(count + 1);
+    console.log(count);
+  }
+  return (
+    <button onClick={h}>
+      {count}
+    </button>
+  );
+}
+\end{reactcode}
+
+
+\section{Dioxus}
++counter+ gets printed every render.
++count+ updates are immediate.
+\begin{reactcode}
+use dioxus::prelude::*;
+fn log(msg: &str) { ... }
+#[component]
+fn Counter() -> Element {
+  log("Counter");
+  let mut count = use_signal(|| 0);
+  use_effect(move || {
+    if count() >= 3 {
+      count.set(0);
+    }
+  });
+  rsx! {
+    button {
+      onclick: move |_| {
+        log(count.to_string().as_str());
+        count += 1;
+        log(count.to_string().as_str());
+      },
+      "{count}"
+    }
+  }
+}
+\end{reactcode}
+
+
+\section{Solid}
++counter+ gets printed only once.
++count+ updates are immediate.
+\begin{reactcode}
+import { createSignal, createEffect } from 'solid-js';
+function Counter() {
+  console.log('counter');
+  const [count, setCount] = createSignal(0);
+  createEffect(() => {
+    if (count() >= 3) {
+      setCount(0);
+    }
+  });
+  function h() {
+    console.log(count());
+    setCount(count() + 1);
+    console.log(count());
+  }
+  return (
+    <button onClick={h}>
+      {count()}
+    </button>
+  );
+}
+\end{reactcode}
+
+
+\section{Leptos}
++counter+ gets printed only once.
++count+ updates are immediate.
+\begin{reactcode}
+use leptos::leptos_dom::logging::*;
+use leptos::prelude::*;
+#[component]
+pub fn Counter() -> impl IntoView {
+  console_log("Counter");
+  let (value, set_value) = signal(0);
+  Effect::new(move |_| {
+    if value.get() >= 3 {
+      set_value.set(0);
+    }
+  });
+  view! {
+    <button on:click=move |_| {
+      console_log(&value.get().to_string());
+      set_value.update(|value| *value += 1);
+      console_log(&value.get().to_string());
+    }>{value}</button>
+  }
+}
+\end{reactcode}
+
+
+\section{Angular}
++counter+ gets printed only once.
++count+ updates are immediate.
+\begin{reactcode}
+import {Component, signal, effect} from '@angular/core';
+@Component({
+  selector: 'app-root',
+  template: `
+    <button (click)="h()">
+      {{ count() }}
+    </button>
+  `,
+})
+export class CounterComponent {
+  count = signal(0);
+  constructor() {
+    console.log('counter');
+    effect(() => {
+      if (this.count() >= 3) {
+        this.count.set(0);
+      }
+    });
+  }
+  h() {
+    console.log(this.count());
+    this.count.update(val => val + 1);
+    console.log(this.count());
+  }
+}
+\end{reactcode}
+
+
+\section{Vue}
++counter+ gets printed only once.
++count+ updates are immediate.
+\begin{reactcode}
+<script setup>
+import { ref, watch } from 'vue';
+console.log('counter');
+const count = ref(0);
+watch(count, (newValue) => {
+  if (newValue >= 3) {
+    count.value = 0;
+  }
+});
+function h() {
+  console.log(count.value);
+  count.value += 1;
+  console.log(count.value);
+}
+</script>
+<template>
+  <button @click="h">
+    {{ count }}
+  </button>
+</template>
+\end{reactcode}
+
+
+\section{Svelte}
+\subsection{Svelte with Runes}
++counter+ gets printed only once.
++count+ updates are immediate.
+\begin{reactcode}
+<script>
+  console.log('counter');
+  let count = $state(0);
+  $effect(() => {
+    if (count >= 3) {
+      count = 0;
+    }
+  });
+  function h() {
+    console.log(count);
+    count += 1;
+    console.log(count);
+  }
+</script>
+<button onclick={h}>
+  {count}
+</button>
+\end{reactcode}
+
+\subsection{Svelte without Runes}
++counter+ gets printed only once.
++count+ updates are immediate.
+\begin{reactcode}
+<svelte:options runes={false} />
+<script>
+  console.log('counter');
+  let count = 0;
+  $: if (count >= 3) {
+    count = 0;
+  }
+  function h() {
+    console.log(count);
+    count += 1;
+    console.log(count);
+  }
+</script>
+<button on:click={h}>
+  {count}
+</button>
+\end{reactcode}
+
+
+\subsection{SwiftUI}
++counter+ gets printed every render.
++count+ updates are immediate.
+\begin{reactcode}
+struct Counter: View {
+  @State private var count = 0
+  var body: some View {
+    print("counter")
+    return Button("\(count)") {
+      print(count)
+      count += 1
+      print(count)
+    }.onChange(of: count) { oldValue, newValue in
+      if newValue >= 3 {
+        count = 0
+      }
+    }
+  }
+}
+\end{reactcode}
+
+\UndefineShortVerb{\+}

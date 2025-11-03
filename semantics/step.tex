@@ -1,0 +1,25 @@
+\hfill\fbox{$\<e, \delta\> \text{ or }\<t, m, \omega, \delta, \mu\> \smallstep \<t, m', \omega', \delta, \mu'\>$}
+\begin{mathpar}
+\inferrule[StepInit]{
+  \Step<\phase{Normal}><->[[], []]{e}{s, [], \omega} \\
+  [] \vdash \sem{init}(s) = \<t, m, \omega'\>
+}{
+  \<e, \delta\> \smallstep \<t, m, \omega \concat \omega', \delta, \rendermode\>
+} \and
+\inferrule[StepEffect]{
+  m \vdash \sem{commitEffs}(t) = \<m', \omega'\>
+}{
+  \<t, m, \omega, \delta, \rendermode\> \smallstep \<t, m', \omega \concat \omega', \delta, \checkmode\>
+} \and
+\inferrule[StepCheck]{
+  m, \delta \vdash \sem{check}(t) = \<\mu, m', \omega'\> \\
+}{
+  \<t, m, \omega, \delta, \checkmode\> \smallstep \<t, m', \omega \concat \omega', \delta, \mu\>
+} \and
+\inferrule[StepEvent]{
+  \clos{x}{e}{\sigma} \in \sem{handlers}(m, t) \\
+  \Step<\phase{Normal}><->[m, \sigma[x \mapsto \<\>]]{e}{v, m', \omega'} \\
+}{
+  \<t, m, \omega, \delta, \eloopmode\> \smallstep \<t, m', \omega \concat \omega', \delta, \checkmode\>
+}
+\end{mathpar}

@@ -1,0 +1,131 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{macros}
+
+\RequirePackage{mathtools}
+
+\RequirePackage{bbold} %\textbb
+\RequirePackage{fontawesome5} %\faReact
+\RequirePackage{pifont} %\ding
+
+\newcommand\Rtrace{\textsc{\textsf{\mbox{React-\allowbreak tRace}}}}
+\newcommand\Ljs{$\uplambda_{\textit{JS}}$}
+\newcommand\Lreact{$\uplambda_{\textrm{react}}$}
+\newcommand\Lmvu{$\uplambda_{\textsf{MVU}}$}
+\providecommand\checkmark{}
+\renewcommand\checkmark{\ding{51}}
+\newcommand{\carret}{\Pisymbol{psy}{191}}
+\newcommand*\gh[1]{{\smaller[1]\faGithub{}}~\nolinkurl{#1}}
+
+\RequirePackage{suffix}
+
+\newcommand*\func[2]{\texttt{fun\:}#1\texttt{\:->\:}#2}
+\newcommand*\cfunc[3]{\texttt{let\:}#1\texttt{(}#2\texttt{)}\texttt{\:=\:}#3}
+\newcommand*\cond[3]{\texttt{if\:}#1\texttt{\:then\:}#2\texttt{\:else\:}#3}
+\newcommand*\letbind[3]{\texttt{let\:}#1\texttt{\:=\:}#2\texttt{\:in\:}#3}
+\newcommand*\stbind[4][\ell]{\texttt{let\:(}#2\texttt{, }{#2}_{\texttt{set}}\texttt{)\:=\:$\texttt{\textbf{useState}}^#1$\:}#3\texttt{\:in\:}#4}
+\newcommand*\eff[1]{\texttt{\textbf{useEffect}}\:#1}
+\newcommand*\print[1]{\texttt{print\:}#1}
+\newcommand*\app[2]{#1\:#2}
+\newcommand*\seq[2]{#1\texttt{;}#2}
+
+\newcommand\TT{\mathtt{t\mspace{-5.5mu}t}}
+\newcommand\FF{\mathtt{f\mspace{-5.2mu}f}}
+
+\newcommand\none{\varepsilon}
+
+\newcommand\Semi{\texttt{;\!;\:}}
+
+\newcommand\finto{\rightharpoonup}
+\newcommand*\dom[1]{\textup{\textsf{#1}}}
+\newcommand*\field[1]{\textup{\textsf{#1}}}
+\newcommand*\fv[2]{\field{#1}\colon #2}
+\newcommand*\sem[1]{\textsf{\textit{#1}}}
+\newcommand*\auxfun[1]{\textit{#1}}
+\newcommand*\judge[1]{\textup{\textsf{#1}}}
+\newcommand*\power[1]{2^{#1}}
+\providecommand\<{}\renewcommand*\<{\langle}
+\providecommand\>{}\renewcommand*\>{\rangle}
+\DeclarePairedDelimiter\struct\lbrace\rbrace
+
+\renewcommand\emptyset{\{\}}
+
+% Constructs
+\newcommand*\com[3]{\{\fv{name}{#1},\:\fv{param}{#2},\:\fv{body}{#3}\}}
+\WithSuffix\newcommand\com*[3]{%
+  \begin{spreadlines}{0pt}
+    \left\{\begin{aligned}
+      \field{name} &\colon #1 \\
+      \field{param} &\colon #2 \\
+      \field{body} &\colon #3
+    \end{aligned}\right\}
+  \end{spreadlines}%
+}
+\newcommand*\lfun[2]{\lambda #1.\mskip 1mu#2}
+\newcommand*\clos[3]{\<\lfun{#1}{#2}, #3\>}
+\newcommand*\phase[1]{\textcolor{RoyalBlue}{\textup{\textsf{#1}}}}
+\newcommand*\dec[1]{\textcolor{RedOrange}{\textup{\textsf{\textbf{#1}}}}}
+\newcommand\Root{\textsf{Root}}
+\newcommand*\view[5]{\{\fv{spec}{#1},\:\fv{dec}{#2},\:\fv{sttst}{#3},\:\fv{effq}{#4},\:\fv{child}{#5}\}}
+\newcommand*\deftabent[2]{\lambda #1.\mskip 1mu#2}
+\newcommand*\sttstent[2]{\{\fv{val}{#1},\:\fv{sttq}{#2}\}}
+\WithSuffix\newcommand\sttstent*[2]{%
+  \begin{spreadlines}{0pt}
+    \left\{\begin{aligned}
+      \field{val} &\colon #1 \\
+      \field{sttq} &\colon #2
+    \end{aligned}\right\}
+  \end{spreadlines}%
+}
+
+\newcommand\rendermode{\text{\smaller[1]\faReact}}
+\newcommand\checkmode{\circlearrowleft}
+\newcommand\eloopmode{\bullet}
+
+% Operators
+\newcommand\cons{\mathbin{:\negthickspace:}}
+\newcommand\concat{\mathbin{+\negthickspace+}}
+\DeclareMathOperator*{\Concat}{+\negthickspace+}
+\newcommand\enqueue{\mathbin{\vartriangleright}}
+\newcommand*\scond[3]{\text{\textbb{(}}#1\mathbin{\text{\textbb{?}}}#2\mathbin{\text{\textbb{:}}}#3\text{\textbb{)}}}
+\newcommand\scondq{\mathbin{\text{\textbb{?}}}}
+\newcommand\scondcolon{\mathbin{\text{\textbb{:}}}}
+\newcommand*\scondp[1]{\text{\textbb{(}}#1\text{\textbb{)}}}
+
+\DeclareMathOperator*\domain{dom}
+\DeclareMathOperator*\image{im}
+\DeclareMathOperator*\lfp{lfp}
+\newcommand\oset[3][0ex]{%
+  \mathrel{\mathop{#3}\limits^{
+    \vbox to#1{\kern-2\ex@
+    \hbox{$\scriptstyle#2$}\vss}}}}
+\newcommand\triangleiff{\oset{\vartriangle}{\iff}}
+
+% Judgements
+\newcommand\smallstep{\hookrightarrow}
+\newcommand*\Bigstep[2]{\Downarrow^{\scriptscriptstyle #1}_{\scriptscriptstyle #2}}
+\WithSuffix\newcommand\Bigstep*[2]{\mathbin{\Overline[\raisebox{1.2ex}{}]{\Downarrow}}^{\scriptscriptstyle #1}_{\scriptscriptstyle #2}}
+\newcommand*\Rule[1]{\textup{\textsc{#1}}}
+
+\ExplSyntaxOn
+\NewDocumentCommand \Overline { o m }
+  {
+    \int_compare:nNnTF
+      { \str_count:n { #2 } } < 2
+      { \overline }
+      { \overline }
+      {
+        \IfNoValueTF { #1 }
+          { #2 }
+          { \vphantom{#1}\smash{#2} }
+      }
+  }
+
+\NewDocumentCommand \Step { s D<>{\phi} D<>{p} O{\Sigma, \sigma} m m }
+  {
+    {#4
+    \vdash #5
+    \IfBooleanTF { #1 } { \Bigstep* } { \Bigstep }
+      { #2 } { #3 }
+    #6}
+  }
+\ExplSyntaxOff

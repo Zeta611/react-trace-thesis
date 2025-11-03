@@ -1,0 +1,102 @@
+\chapter{Re-Rendering Pitfalls with React Hooks}\label{chap:pit}
+Having examined the peculiarities of \reacttt{useState} and \reacttt{useEffect} in~\cref{chap:over}, we now demonstrate how their interaction can lead to common render-related bugs.
+These pitfalls are challenging as they stem from the opaque render semantics.
+These issues motivate our formal semantics~(\cref{chap:sem}).
+
+
+\section{Infinite Re-Rendering}\label{sec:inf}
+Infinite re-rendering is perhaps the most catastrophic bug one can encounter when using Hooks.
+There are two different problems in this category of bugs: an infinite render loop due to always setting a different state in a \reacttt{useEffect}~(\cref{subsec:infloop}) and an infinite re-evaluation of a component body due to a top-level call to a setter function~(\cref{subsec:topset}).
+
+
+\subsection{Infinite Render Loop with an Effect}\label{subsec:infloop}
+Using \reacttt{useEffect} can easily lead to an infinite render loop---searching StackOverflow with the query `\textsf{"useEffect" "infinite"}' returns more than 1600~results \citep{Jay25Archive}.
+We describe the essence of the issue here.
+
+Infinite render loop occurs because setting state within an Effect triggers the runtime to \dec{Check}\footnote{We use \dec{red boldfaced sans-serif} to emphasize a decision, whose semantic meaning is formally introduced in~\cref{sec:dom}.} if the state has changed, which is implemented by invoking the component body again.
+If the state whose setter function is called is actually modified, the component re-renders and decides to run the \dec{Effect} again.
+Essentially, this \dec{Check}-\dec{Effect} decision cycle creates a render loop.
+In the following, we show a basic example that renders infinitely many times due to this mechanism.
+
+\begin{wrapfigure}[4]{l}{0.35\linewidth}
+  \vspace{-1.2\intextsep}
+  \begin{reactcode}
+let Inf x =
+  let (s, setS) = useState 0 in
+  useEffect (setS (fun s -> s+1));
+  s;;
+Inf 0
+  \end{reactcode}
+\end{wrapfigure}
+\noindent The component \reacttt{Inf} on the left is a simple example that increments the state by one after each render in an Effect.
+Upon each call to \reacttt{setS} while executing an Effect, the component ``remembers'' that its body needs to be scanned again to see if the state has actually changed.
+We say that the component decides to \dec{Check} in the next render pass.
+Since~\reacttt{s} always increments, the scan results in the runtime re-rendering \reacttt{Inf} indefinitely.
+
+
+This render loop is similar to the example \verb+SelfCounter+ shown in~\cref{sec:useEffect}, although this time, the condition that breaks the loop is absent.
+A generalized issue is presented in~\cref{sec:unnec}.
+
+
+\subsection{Top-Level Call to a Setter Function}\label{subsec:topset}
+Infinite loop caused by a top-level call to a setter function is also a common source of confusion---the most frequent StackOverflow question with both the \textsf{[reactjs]} and \textsf{[infinite-loop]} tag is about this issue \citep{Teh19Updating}.
+
+When a component sets a state in the top-level, the runtime immediately \dec{Check}s the component again by re-evaluating it.
+This causes React to discard the returned view and re-read the component.% body with updated states.
+
+An active \dec{Check} decision during reading a component is treated specially as a signal to \emph{retry} the component before the render, unlike a \dec{Check} decision while running an Effect.
+Therefore, an unconditional top-level call to a setter function causes an infinite loop and is never correct.
+
+\begin{wrapfigure}[4]{r}{0.33\linewidth}
+  \vspace{-\intextsep}
+  \begin{reactcode}
+let Inf2 x =
+  let (s, setS) = useState x in
+  setS (fun s -> s);
+  s;;
+Inf2 0
+  \end{reactcode}
+\end{wrapfigure}
+Unlike the infinite render loop bug previously discussed in~\cref{subsec:infloop}, \reacttt{Inf2} on the right does not even reach the screen.
+|Inf2| simply causes the UI to show a blank screen.
+Even if the state is always set to the same value~|0|, |Inf2| falls into an infinite loop.
+
+% Top-level calls to setter functions can be useful when the previous state of the component is needed:
+
+
+\section{Unnecessary Re-Rendering}\label{sec:unnec}
+A simple example of an unnecessary re-render triggered by the \reacttt{useEffect} Hook is demonstrated in the following component \reacttt{Flicker}.\,
+\reacttt{Flicker} starts with an initial state~|0|, and immediately after%
+\begin{wrapfigure}[4]{l}{0.34\linewidth}
+  \vspace*{-.2\intextsep}
+  \begin{reactcode}
+let Flicker x =
+  let (s, setS) = useState x in
+  useEffect (setS (fun _ -> 42));
+  s;;
+Flicker 0
+  \end{reactcode}
+\end{wrapfigure}%
+the render, it updates the state to~|42|, triggering the runtime to \dec{Check} the component and causes a re-render.
+A swift user might even see the transient state~|0| and notice a ``flicker'' in the UI.
+
+While technically a similar problem to the one discussed in~\cref{subsec:infloop}, this is a performance issue, in contrast to the other which was an evident bug.
+When the component needs to access an external resource in order to set a state, setting a state after the call to \reacttt{useEffect} may be necessary, but in other scenarios, it is a waste of a render cycle to do so.
+
+\begin{wrapfigure}[6]{r}{0.39\linewidth}
+  \vspace*{-\intextsep}
+  \begin{reactcode}
+let Child setS =
+  useEffect (setS (fun _ -> false));
+  ();;
+let Parent b =
+  let (s, setS) = useState b in
+  if s then Child setS else ();;
+Parent true
+  \end{reactcode}
+\end{wrapfigure}
+Note that this issue can happen inter-component as well in a more subtle manner.
+In the example on the right, the parent component \reacttt{Parent} decides to render the child component \reacttt{Child} based on the state~\reacttt{s}.
+Initially, \reacttt{Parent} renders \reacttt{Child}, passing its setter function \reacttt{setS} to \reacttt{Child}.
+After the render, Effect in \reacttt{Child} gets invoked, queuing an update to the state~\reacttt{s} of \reacttt{Parent} to \reacttt{false}.
+In the end, \reacttt{Parent} re-renders, but this time, it will not render \reacttt{Child}, as the state~\reacttt{s} becomes \reacttt{false}.

@@ -1,0 +1,37 @@
+\hfill\fbox{$m, \delta \vdash \sem{reconcile}(t, s) = \<t', m', \omega\>$}
+\begin{mathpar}
+  % TODO: Update the rule
+  \inferrule[ReconcileArray]{
+    \bigl(m_{i-1}, \delta \vdash \sem{reconcile}(t_i, s_i) = \<t_i', m_i, \omega_i\>\bigr)_{i = 1}^n
+  }{
+    m_0, \delta
+    \vdash \sem{reconcile}([\Overline{t_i}]_{i = 1}^n, [\Overline{s_i}]_{i = 1}^n)
+    = \<[\Overline{t_i'}]_{i = 1}^n, m_n, {\textstyle\Concat_{i = 1}^n \omega_i}\>
+  } \and
+  \inferrule[ReconcileComEffect]{
+    m[p] = \pi \\
+    \pi.\field{spec} = \<C, \_\> \\
+    \delta[C] = \deftabent{x}{e} \\
+    \Step*<\phase{Succ}>[
+      \pi\{\fv{spec}{\<C, v\>}\},
+      [x \mapsto v]
+    ]{e}{s, \pi', \omega} \\
+    m, \delta \vdash \sem{reconcile}(\pi.\field{child}, s) = \<t', m', \omega'\> \\
+  }{
+    m, \delta \vdash \sem{reconcile}(p, \<C, v\>) = \bigl\<p, m'[p \mapsto \pi'\{\fv{dec}{\{\dec{Effect}\}}, \fv{child}{t'}\}], \omega \concat \omega'\bigr\>
+  } \and
+  \inferrule[ReconcileComNew]{
+    m[p].\field{spec} = \<C', \_\> \\
+    C \ne C' \\
+    m, \delta \vdash \sem{init}(\<C, v\>) = \<t', m', \omega\>
+  }{
+    m, \delta \vdash \sem{reconcile}(p, \<C, v\>) = \<t', m', \omega\>
+  } \and
+  \inferrule[ReconcileOther]{
+    \<t, s\> \neq \<[\Overline{t}], [\Overline{s}]\> \\
+    \<t, s\> \neq \<p, \<C, v\>\> \\
+    m, \delta \vdash \sem{init}(s) = \<t', m', \omega\>
+  }{
+    m, \delta \vdash \sem{reconcile}(t, s) = \<t', m', \omega\>
+  }
+\end{mathpar}

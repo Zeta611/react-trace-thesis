@@ -1,0 +1,26 @@
+\hfill\fbox{$m \vdash \sem{commitEffs}(t) = \<m', \omega\>$}
+\begin{mathpar}
+  \inferrule[CommitEffsConst]{ }{m \vdash \sem{commitEffs}(k) = \<m, []\>} \and
+  \inferrule[CommitEffsClos]{ }{m \vdash \sem{commitEffs}(cl) = \<m, []\>} \and
+  \inferrule[CommitEffsArray]{
+    \bigl(m_{i-1} \vdash \sem{commitEffs}(t_i) = m_i, \omega_i\bigr)_{i = 1}^n
+  }{
+    m_0 \vdash \sem{commitEffs}([\Overline{t_i}]_{i = 1}^n) = \<m_n, {\textstyle\Concat_{i = 1}^n \omega_i}\>
+  } \and
+  \inferrule[CommitEffsPathIdle]{
+    \dec{Effect} \notin m[p].\field{dec} \\
+    m \vdash \sem{commitEffs}(m[p].\field{child}) = \<m', \omega\> \\
+  }{
+    m \vdash \sem{commitEffs}(p) = \<m', \omega\>
+  } \and
+  \inferrule[CommitEffsPath]{
+    \dec{Effect} \in m[p].\field{dec} \\
+    m[p].\field{effq} = [\Overline{\clos{\_}{e_i}{\sigma_i}}]_{i = 1}^n \\
+    m \vdash \sem{commitEffs}(m[p].\field{child}) = \<m_0, \omega_0\> \\
+    \bigl(
+      \Step<\phase{Normal}><->[m_{i-1}, \sigma_i]{e_i}{v_i, m_i, \omega_i}
+    \bigr)_{i = 1}^n
+  }{
+    m \vdash \sem{commitEffs}(p) = \bigl\<m_n\bigl[p \mapsto m_n[p]\{\fv{dec}{m_n[p].\field{dec} \setminus \{\dec{Effect}\}}\}\bigr], {\textstyle\Concat_{i = 0}^n \omega_i}\bigr\>
+  }
+\end{mathpar}

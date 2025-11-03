@@ -1,0 +1,45 @@
+\hfill\fbox{$m, \delta \vdash \sem{check}(t) = \<\mu, m', \omega\>$}
+\begin{mathpar}
+  \inferrule[CheckConst]{ }{m, \delta \vdash \sem{check}(k) = \<\eloopmode, m, []\>} \and
+  \inferrule[CheckClos]{ }{m, \delta \vdash \sem{check}(cl) = \<\eloopmode, m, []\>} \and
+  \inferrule[CheckArray]{
+    \bigl(m_{i-1}, \delta \vdash \sem{check}(t_i) = \<\mu_i, m_i, \omega_i\>\bigr)_{i = 1}^n
+  }{\textstyle
+    m_0, \delta \vdash \sem{check}([\Overline{t_i}]_{i = 1}^n) = \<\bigsqcup_{i = 1}^n \mu_i, m_n, {\textstyle\Concat_{i = 1}^n \omega_i}\>
+  } \and
+  \inferrule[CheckIdle]{
+    m[p] = \pi \\
+    \dec{Check} \notin \pi.\field{dec} \\
+    m, \delta \vdash \sem{check}(\pi.\field{child}) = \<\mu, m', \omega\>
+  }{\textstyle
+    m, \delta \vdash \sem{check}(p) = \<\mu, m', \omega\>
+  } \and
+  \inferrule[CheckNoEffect]{
+    m[p] = \pi \\
+    \dec{Check} \in \pi.\field{dec} \\
+    \pi.\field{spec} = \<C, v\> \\
+    \delta[C] = \deftabent{x}{e} \\
+    \Step*<\phase{Succ}>[
+      \pi,
+      [x \mapsto v]
+    ]{e}{\_, \pi', \omega} \\
+    \dec{Effect} \notin \pi'.\field{dec} \\
+    m, \delta \vdash \sem{check}(\pi.\field{child}) = \<\mu, m', \omega'\>
+  }{\textstyle
+    m, \delta \vdash \sem{check}(p) = \<\mu, m'[p \mapsto \pi'], \omega \concat \omega'\>
+  } \and
+  \inferrule[CheckEffect]{
+    m[p] = \pi \\
+    \dec{Check} \in \pi.\field{dec} \\
+    \pi.\field{spec} = \<C, v\> \\
+    \delta[C] = \deftabent{x}{e} \\
+    \Step*<\phase{Succ}>[
+      \pi,
+      [x \mapsto v]
+    ]{e}{s, \pi', \omega} \\
+    \dec{Effect} \in \pi'.\field{dec} \\
+    m, \delta \vdash \sem{reconcile}(\pi.\field{child}, s) = \<t', m', \omega'\> \\
+  }{\textstyle
+    m, \delta \vdash \sem{check}(p) = \<\rendermode, m'[p \mapsto \pi'\{\fv{child}{t'}\}], \omega \concat \omega'\>
+  }
+\end{mathpar}

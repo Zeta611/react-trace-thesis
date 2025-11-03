@@ -1,0 +1,18 @@
+\hfill\fbox{$\Step*<\phi><p>[\pi, \sigma]{e}{s, \pi', \omega}$}
+\begin{mathpar}
+  \inferrule[EvalOnce]{
+    \Step[\pi\{\fv{dec}{\pi.\field{dec}\setminus\{\dec{Check}\}},\fv{effq}{[]}\}, \sigma]{e}{s, \pi', \omega} \\
+    \dec{Check} \notin \pi'.\field{dec} \\
+    \phi \in \{\phase{Init}, \phase{Succ}\}
+  }{
+    \Step*[\pi, \sigma]{e}{s, \pi', \omega}
+  } \and
+  \inferrule[EvalMult]{
+    \Step[\pi\{\fv{dec}{\pi.\field{dec}\setminus\{\dec{Check}\}},\fv{effq}{[]}\}, \sigma]{e}{s, \pi', \omega} \\
+    \dec{Check} \in \pi'.\field{dec} \\
+    \Step*<\phase{Succ}>[\pi', \sigma]{e}{s', \pi'', \omega'} \\
+    \phi \in \{\phase{Init}, \phase{Succ}\}
+  }{
+    \Step*[\pi, \sigma]{e}{s', \pi'', \omega \concat \omega'}
+  }
+\end{mathpar}

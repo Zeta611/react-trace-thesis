@@ -1,0 +1,62 @@
+\chapter{Discussion}\label{chap:discussion}
+\paragraph{Extensions to Other Hooks}
+While our semantics focuses on the two most prevalent Hooks \reacttt{useState} and \reacttt{useEffect}, it's designed to be extensible.
+Incorporating additional Hooks builds upon existing machinery for bookkeeping and lifecycle modes.
+
+Hooks are mostly state managing (\reacttt{useState}, \reacttt{useRef}, \reacttt{useMemo}, \reacttt{useContext}) or side effect performing (\reacttt{useEffect}, \reacttt{useLayoutEffect}, \reacttt{useInsertionEffect}), which can be supported by extending view record~$\pi$ and/or inserting modes in render transitions.
+Users can also build custom Hooks by combining existing Hooks in a function, which should be \textbf{\texttt{use}}-prefixed.
+
+We sketch how to extend the semantics to other Hooks:
+\begin{description}
+  \item[$\textbf{\texttt{useRef}}^\ell$] Add $\pi.\field{refst}$ storing refs~$[\Overline{\ell \mapsto v}]$.
+    Unlike \reacttt{useState}, mutating a ref does not trigger re-renders, so no \dec{Check} decision is added when mutated.
+    In \phase{Init} phase, the ref is initialized; in \phase{Succ} phase, the same ref is returned.
+  \item[$\textbf{\texttt{useMemo}}^\ell$] Add $\pi.\field{memost}$ storing values and their dependencies~$[\Overline[\ell]{\ell \mapsto \{\field{val}: v, \field{deps}: [\Overline{v}]\}}]$.
+    Similar to \reacttt{useState}, in \phase{Init} the value is computed from the provided function; in \phase{Succ} the value is recomputed only when dependencies differ from the stored ones.
+  \item[\textbf{\texttt{useContext}}] Add $\pi.\field{ctxst}$ storing a list of consumed contexts and tree memory~$m$ is traversed upward to find the nearest context provider.
+    When a provider's value changes, all consuming views are marked with \dec{Check} to trigger re-renders.
+  \item[\textbf{\texttt{useLayoutEffect}}] Add mode~$\rendermode'$ into render transitions (\cref{fig:step}).
+    \Rule{StepInit} enters~$\rendermode'$ after the initial render; a new rule \Rule{StepLayoutEffect} processes LayoutEffects determining the transition~$\<t, m, \omega, \delta, \rendermode'\> \smallstep \<t, m', \omega', \delta, \checkmode\>$.
+  \item[\textbf{\texttt{useInsertionEffect}}] Similar to \reacttt{useLayoutEffect} but runs before.
+    State updates are forbidden in InsertionEffects by the React runtime, hence the pitfalls described in \cref{chap:pit} cannot occur. % (\url{https://github.com/facebook/react/issues/24160})
+  \item[Custom Hooks] Supported by allowing user function definitions~(\cref{fig:syntax}) and \dom{DefTable}~(\cref{sec:dom}).
+    No additional machinery is required as custom Hooks are compositions of primitive Hooks.
+\end{description}
+
+
+\paragraph{Verifying the React Compiler}
+Our formalization of Hooks is particularly timely as the React team is currently developing the React compiler \citep{Met25Compiler}, where various optimizations can be verified using our semantics as in~\cref{subsec:opt}.
+The compiler optimizes React programs by eliminating unnecessary re-renders through memoization.
+However, without a proper formal semantics of Hooks, there is no rigorous way to verify that the compiler preserves program behavior.
+Our semantics can thus serve as a foundation for reasoning about their correctness.
+
+
+\paragraph{Beyond React}
+Our work can be extended to accommodate other reactive UI frameworks as well.
+There is a plethora of GUI frameworks---React, Preact (\href{https://preactjs.com/}{preactjs.com}), Dioxus (\href{https://dioxuslabs.com/}{dioxuslabs.com}), Solid (\href{https://www.solidjs.com/}{solidjs.com}), Svelte (\href{https://svelte.dev/}{svelte.dev}), and Leptos (\href{https://leptos.dev/}{leptos.dev})---with variations in their reactivity models.
+
+These frameworks can be categorized based on three properties: (a)~whether they re-read component specifications for re-rendering, (b)~how state updates are processed (queued or immediate), and (c)~which reactivity primitives they employ.
+
+Reactive primitives include Hooks (where frameworks schedule update checks), signals (where state updates propagate actively), and compiler-assisted methods (where dependencies are statically resolved).
+By parameterizing our semantics with appropriate timing and semantic operators, we capture these variations.
+A full comparison of the frameworks is provided in~\cref{app:chap:frameworks}.
+
+As a reference to how similar these frameworks can be, compare the Dioxus code on the left (where Rules of Hooks apply as well! \citep{Dio25Hooks}) and the \Rtrace{} code on the right.
+\begin{center}
+  \begin{minipage}{0.45\linewidth}
+    \begin{reactcode}
+pub fn Counter() -> Element {
+  let mut count = use_signal(|| 0);
+  rsx! { button { onclick: move |_|
+    count += 1, "{count}" } }
+    \end{reactcode}
+  \end{minipage}%
+  \begin{minipage}{0.45\linewidth}
+    \begin{reactcode}
+let Counter _ =
+  let (count, setCount) = useState 0 in
+  [button (fun _ ->
+    setCount(fun count -> count+1)), count]
+    \end{reactcode}
+  \end{minipage}
+\end{center}

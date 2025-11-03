@@ -1,0 +1,138 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{base}
+
+% Typographically improved footnotes
+\let\origfootnote\footnote
+\renewcommand\footnote[1]{\kern.06em\origfootnote{#1}}
+\newcommand\pfootnote[1]{\kern-.06em\origfootnote{#1}}
+
+\RequirePackage{relsize}
+
+\RequirePackage{mathtools}
+
+\RequirePackage{amsthm}
+\RequirePackage{thmtools}
+\declaretheorem[name=Theorem, style=plain]{thm}
+\declaretheorem[name=Lemma, style=plain, sibling=thm]{lem}
+\declaretheorem[name=Proposition, style=plain, sibling=thm]{prop}
+\declaretheorem[name=Definition, style=definition, qed=$\square$, sibling=thm]{defn}
+\declaretheorem[name=Notation, style=remark, numbered=no]{nota}
+\declaretheorem[name=Remark, style=remark, numbered=no]{remark}
+\renewcommand{\qedsymbol}{$\blacksquare$}
+
+
+\RequirePackage{wrapfig}
+
+\RequirePackage{fancyvrb}
+\DefineVerbatimEnvironment{console}{Verbatim}{%
+  frame=lines,
+  label=Console,
+  numbers=left,
+  numbersep=8pt,
+  xleftmargin=0.5em,
+  fontsize=\footnotesize,
+}
+
+\RequirePackage{listings}
+
+\ExplSyntaxOn
+\regex_new:N \l_capital_regex
+\regex_set:Nn \l_capital_regex { ^ [A-Z]+ }
+\cs_generate_variant:Nn \regex_match:NnTF {No}
+
+\NewDocumentCommand \ifcamelcase { m m }
+{
+  \cs_set_eq:Nc \__capital_um { lst@um_ }
+  \tl_set:cn { lst@um_ } { _ }
+  \regex_match:NoTF \l_capital_regex { \the\use:c{lst@token} }
+    {#1} {#2}
+  \cs_set_eq:cN { lst@um_ } \__capital_um
+}
+\ExplSyntaxOff
+
+\lstdefinelanguage{React}{
+  % JS
+  morekeywords=[1]{function, const, return, typeof, constructor},
+  % React-tRace
+  morekeywords=[1]{let, in, fun, if, then, else, print, mod},
+  % Rust
+  morekeywords=[1]{pub, fn, mut, move},
+  % SwiftUI
+  morekeywords=[1]{struct, var, some, private},
+  keywordstyle=[1]\color{ForestGreen},
+  morekeywords=[2]{useState, useEffect, useRef, useLayoutEffect, useMemo, useContext, useInsertionEffect, button},
+  % Solid
+  morekeywords=[2]{createSignal, createEffect},
+  % Angular
+  morekeywords=[2]{signal, effect},
+  % Svelte
+  morekeywords=[2]{script, $state, $effect},
+  % Vue
+  morekeywords=[2]{ref, watch},
+  % Dioxus
+  morekeywords=[2]{use_signal, use_effect, button},
+  % Leptos
+  morekeywords=[2]{Effect, new},
+  % SwiftUI
+  morekeywords=[2]{@State, onChange},
+  keywordstyle=[2]\bfseries,
+  morecomment=[l]{\#},
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]',
+  morestring=[b]",
+  alsoletter={_},
+  identifierstyle=\ifcamelcase{\color{RoyalBlue}}{\color{Black}},
+  commentstyle=\color{Gray}\ttfamily\itshape,
+  stringstyle=\color{RedViolet}\ttfamily,
+  sensitive=true,
+}
+
+\lstdefinestyle{snippetReact}{
+  language=React,
+  basicstyle=\linespread{1.1}\footnotesize\ttfamily,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=4pt,
+  xleftmargin=0.5em,
+  breaklines=false,
+  tabsize=2,
+  showtabs=false,
+  columns=flexible,
+  extendedchars=true,
+  aboveskip=0pt,
+  belowskip=0pt,
+}
+
+\lstdefinestyle{inlineReact}{
+  language=React,
+  keywordstyle=[1]\color{Black},
+  identifierstyle=\color{Black},
+  basicstyle=\ttfamily,
+}
+
+\lstnewenvironment{reactcode}[1][]{\lstset{style=snippetReact,#1}}{}
+\lstMakeShortInline[style=inlineReact]|
+\newcommand*\reacttt[1]{\lstinline[style=inlineReact]/#1/}
+
+\RequirePackage{multirow}
+
+\RequirePackage{enumitem}
+
+% FIX: simplebnf can't be used
+\RequirePackage{simplebnf}
+\SetBNFLayout{
+  colsep = 2pt,
+  column{2} = {mode=dmath},
+  column{4} = {mode=text, font=\ttfamily},
+}
+\setmathfont{Garamond-Math.otf}[
+  Scale = MatchUppercase,
+  range = {\Coloneq}
+]
+\AtBeginEnvironment{bnf}{\lstDeleteShortInline|}
+\AfterEndEnvironment{bnf}{\lstMakeShortInline[style=inlineReact]|}
+\AtBeginEnvironment{tabular}{\lstDeleteShortInline|}
+\AfterEndEnvironment{tabular}{\lstMakeShortInline[style=inlineReact]|}
+
+\RequirePackage{mathpartir}

@@ -1,0 +1,21 @@
+\hfill\fbox{$m, \delta \vdash \sem{init}(s) = \<t, m', \omega\>$}
+\begin{mathpar}
+  \inferrule[InitConst]{ }{m, \delta \vdash \sem{init}(k) = \<k, m, []\>} \and
+  \inferrule[InitClos]{ }{m, \delta \vdash \sem{init}(cl) = \<cl, m, []\>} \and
+  \inferrule[InitArray]{
+    \bigl(m_{i-1}, \delta \vdash \sem{init}(s_i) = \<t_i, m_i, \omega_i\>\bigr)_{i = 1}^n
+  }{
+    m_0, \delta \vdash \sem{init}([\Overline{s_i}]_{i = 1}^n) = \<[\Overline{t_i}]_{i = 1}^n, m_n, {\textstyle\Concat_{i = 1}^n \omega_i}\>
+  } \and
+  \inferrule[InitCom]{
+    m \vdash p\:\judge{fresh} \\
+    \delta[C] = \deftabent{x}{e} \\
+    \Step*<\phase{Init}>[
+      \view{\<C, v\>}{\emptyset}{[]}{[]}{\<\>},
+      [x \mapsto v]
+    ]{e}{s, \pi, \omega} \\
+    m[p \mapsto \pi], \delta \vdash \sem{init}(s) = \<t, m', \omega'\>
+  }{
+    m, \delta \vdash \sem{init}(\<C, v\>) = \bigl\<p, m'[p \mapsto \pi\{\fv{dec}{\{\dec{Effect}\}}, \fv{child}{t}\}], \omega \concat \omega'\bigr\>
+  }
+\end{mathpar}

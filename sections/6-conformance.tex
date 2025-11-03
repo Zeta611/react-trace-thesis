@@ -1,0 +1,273 @@
+\chapter{Conformance with React}\label{chap:rules}
+\Rtrace{} is a faithful model of Hooks backed by both theoretical and empirical evaluation:
+\begin{enumerate}
+  \item \textbf{Conformance according to the official documentation:}
+    Although React does not come with a formal definition, we can extract key properties of React based on the documentation.
+    We show that \Rtrace{} respects the key properties of React as documented in~\cref{sec:key}.
+  \item \textbf{Direct testing against the implementation:}
+    We present the results of empirical tests comparing \Rtrace{} against (multiple releases of) React's runtime behavior across a range of scenarios, covering all evaluation rules, in~\cref{sec:tests}.
+\end{enumerate}
+
+
+\section{Conformance Theorems on React}\label{sec:key}
+The React documentation provides an informal explanation of the behavioral properties of React applications.
+Most of these properties are explicitly captured in our semantics.
+To demonstrate that our semantics align with the behaviors described in the documentation, we prove two key properties in~\cref{subsec:key}:
+\begin{description}
+  \item[\Cref{thm:reeval}:] When a setter function is called during rendering, React immediately attempts to re-evaluate the component body with the updated state \citep{Met25UseState}.
+  \item[\Cref{thm:eff}:] A view's Effects are executed after re-rendering triggered by a state update from itself or one of its ancestors \citep{Met25Render}.
+\end{description}
+
+While there are slight differences between our semantics and the React runtime due to an optimization in React, this does not affect reasoning about most React applications.
+We have formalized this optimization and proved that it preserves output behavior (\cref{thm:simtrans},~\cref{subsec:opt}), provided that applications adhere to the constraints specified by React.
+
+
+\subsection{Key Properties of React}\label{subsec:key}
+The first key property states that when a setter function is called during rendering, React immediately attempts to re-evaluate the component body with the updated state.
+The pitfall discussed in~\cref{subsec:topset} is due to this property.
+This behavior is modeled by allowing multiple evaluations of the component body to occur within a retrying evaluation, which happens iff a setter is applied during the first evaluation.
+
+\begin{thm}[Re-Evaluation by Calling Setter]\label{thm:reeval}
+The derivation of \(\Step*[\pi, \sigma]{e}{v', \pi'', \omega'}\) includes multiple evaluations of \(e\)
+iff \Rule{AppSetComp} appears in the derivation of the first evaluation:
+\[ \Step[\pi\{\fv{dec}{\pi.\field{dec} \setminus \{\dec{Check}\}}, \fv{effq}{[]}\}, \sigma]{e}{v, \pi', \omega} \]
+\end{thm}
+
+\begin{proof}
+Multiple evaluations of \(e\) occur in a retrying evaluation iff the resulting view~\(\pi'\) from the first evaluation includes the \dec{Check} decision (\Rule{EvalMult}).
+Thus, it suffices to show that \(\pi'.\field{dec}\) contains \dec{Check} iff \Rule{AppSetComp} appears in the derivation of the first evaluation.
+
+This follows directly from the semantics: \Rule{AppSetComp} is the only rule that introduces \dec{Check} during evaluation (when \(\phi \in \{\phase{Init}, \phase{Succ}\}\)).
+Moreover, once added, no rule removes \dec{Check} from the view's decision.
+Therefore, \(\pi'\) includes \dec{Check} iff a setter is applied during the first evaluation.
+\end{proof}
+
+The second key property states that Effects are executed when queued state updates modify the state values of a view or one of its ancestors (case~1 of \cref{thm:eff}).
+Notably, Effects may still be executed even if the final state values remain unchanged, provided state setters are invoked during the evaluation of the component body (case~2 of \cref{thm:eff}).
+
+\begin{thm}[Effect Execution Condition]\label{thm:eff}
+If $\<t,m,\omega,\delta,\checkmode\> \smallstep \<t,m',\omega',\delta,\mu\>$,
+then for all paths~$p$ reachable from the root in both~$m$ and~$m'$,
+\Rule{CommitEffsPath} with~$p$ appears in the derivation of the next transition~$\<t,m',\omega',\delta,\mu\> \smallstep \<t,m'',\omega'',\delta,\mu'\>$
+iff there exists an ancestor~$p'$ of~$p$ such that either
+\begin{enumerate}
+  \item for some $\ell \in \domain(m'[p'].\field{sttst})$, we have $m[p'].\field{sttst}[\ell].\field{val} \ne m'[p'].\field{sttst}[\ell].\field{val}$; or
+  \item the derivation of $\<t,m,\omega,\delta,\checkmode\> \smallstep \<t,m',\omega',\delta,\mu\>$ includes \Rule{AppSetComp} with path~$p'$.
+\end{enumerate}
+\end{thm}
+
+\begin{proof}
+We first show only the views in rendered mode~\(\rendermode\) may carry the \dec{Effect} decision. This follows from the operational rules governing state transitions:
+\begin{itemize}
+  \item \Rule{StepInit} transitions the initial state to rendered mode~\(\rendermode\).
+  \item \Rule{StepEffect} clears all \dec{Effect} decisions from descendants of~$t$ via \(\sem{commitEffs}\).
+  \item \Rule{StepCheck} ensures \dec{Effect} is added only when transitioning into rendered mode~\(\rendermode\), by induction on \(\sem{check}\).
+  \item \Rule{StepEvent} does not introduce \dec{Effect}.
+\end{itemize}
+
+The \Rule{CommitEffsPath} rule with path~$p$ appears in the derivation of the next transition iff the \Rule{StepEffect} rule is applied (i.e., \(\mu = \rendermode\)) and \dec{Effect} is included in $m'[p].\field{dec}$.
+Among the views reachable in~$m'$, only those updated by \(\sem{check}\) during the first transition may carry the \dec{Effect} decision.
+More precisely, \dec{Effect} is added to~$p$ iff~$p$ is a descendant of some~$p'$ such that \(\sem{check}(p')\) is derived via \Rule{CheckEffect}.
+This holds iff the resulting view~\(\pi'\) from the retrying evaluation of~$p'$'s body satisfies \(\dec{Effect} \in \pi'.\field{dec}\).
+
+We now show that \dec{Effect} is added to such a view after the retrying evaluation iff either (a)~the final state differs from the initial state, or (b)~setters are applied during the evaluation.
+
+Case~(a) is immediate: state updates occur only via \Rule{SttReBind}, which adds \dec{Effect} when the new value differs from the old.
+
+In case~(b), applying a setter adds \dec{Check} and triggers re-evaluation via \Rule{EvalMult}.
+Resolving this re-evaluation loop requires the subsequent evaluation to yield a different result, which necessitates a different binding via \Rule{SttReBind}, thereby introducing \dec{Effect}.
+Hence, any terminating derivation involving \Rule{AppSetComp} includes \dec{Effect} in the resulting decision.
+
+Conversely, suppose \dec{Effect} is added, but the final state values are equal to the initial ones.
+Then at least one state must have changed and reverted---that is, some label~$\ell$ was updated from~$v$ to~$v'$, and then back to~$v$---implying multiple applications of \Rule{SttReBind} with the same label.
+This only occurs when \Rule{AppSetComp} triggers multiple evaluations of the body.
+Therefore, \dec{Effect} is added iff either some state value differs from its original value, or \Rule{AppSetComp} appears in the derivation.
+\end{proof}
+
+
+\subsection{Optimization in React}\label{subsec:opt}
+There is a subtle discrepancy between our semantics and the React runtime due to an optimization:
+When a state update callback returns the same value as the current state, React skips re-evaluating the component body.
+
+\begin{wrapfigure}[7]{l}{0.377\linewidth}
+  \vspace*{-\intextsep}
+  \begin{reactcode}
+let Counter _ =
+  print 0;
+  let (s, setS) = useState 1 in
+  [s, button (fun _ ->
+   setS (fun s -> (print 1; s));
+   setS (fun s -> (print 2; s+1));
+   setS (fun s -> (print 3; s+1)))];;
+Counter ()
+  \end{reactcode}
+\end{wrapfigure}
+\noindent In our semantics, clicking the button prints~\verb+0\0\1\2\3+.
+The first~\verb+0+ is printed during the initial render.
+When the button is clicked after the render, the event handler queues the state updates without printing anything.
+Then, during the second render triggered by the state updates, another~\verb+0+ is printed.
+Finally, as the updates are applied,~\verb+1\2\3+ are printed.
+
+In contrast, React prints~\verb+0\1\2\0\3+ due to the optimization.
+The first~\verb+0+ is printed during the initial render.
+Upon clicking the button, the first two updates are evaluated immediately:~\verb+1+ and~\verb+2+ are printed as React checks whether the state has changed.
+The second update returns a new state, triggering a re-render.
+The third update is skipped at this point because a re-render is already scheduled.
+During the re-render, the second~\verb+0+ is printed, followed by~\verb+3+ from the queued third update.
+
+We could have included this optimization for completeness, but we chose not to in order to maintain conciseness.
+However, this omission does not compromise correctness as long as applications conform to the constraints specified in the React documentation.
+
+% To model the optimization formally, we introduce the notions of purity, normalization, and similarity,
+% and
+Indeed, we show that the optimization preserves program behavior in \cref{thm:simtrans} (under certain conditions).
+
+The optimization can be understood as partially applying queued state updates without re-executing the component body.
+Assuming these updates are pure (\cref{def:purity}) as required by the React documentation, this corresponds to a form of partial normalization,
+in which only a prefix of the pure updates is applied.
+We formalize the relationship between the original and optimized tree memory using the notion of \emph{similarity} ($m \approx_t m'$; \cref{def:similarity}),
+which is defined in terms of \emph{normalization} (\cref{def:normalization})---a process of applying pure updates in advance.
+
+\begin{defn}[Purity]\label{def:purity}
+  A closure~$\<\lfun x e, \sigma\>$ is \emph{pure} iff
+  the application of any value~$v$ does not cause any side effects.
+  That is, for all~$\Sigma$ and~$v$, we have~$\Step[\Sigma,\sigma[x\mapsto v]]{e}{\_,\Sigma, []}$
+\end{defn}
+
+\begin{defn}[Normalization]\label{def:normalization}
+  A \emph{normalization} of a state store entry is defined as the result of applying its pure prefix of state updates, with its resulting decision collected.
+  Let~$l$ be the length of such a prefix.
+  Then
+  \begin{multline*}
+    \sem{normalize}\bigl(\bigl\{\fv{val}{v_0},\fv{sttq}{\bigl[\Overline{\<\lfun{x_i}{e_i},\sigma_i\>}\bigr]_{i=1}^n}\bigr\}\bigr)
+    = \bigl\<\bigl\{ \fv{val}{v_l},
+         \fv{sttq}{\bigl[\Overline{\<\lfun{x_i}{e_i},\sigma_i\>}\bigr]_{i=l+1}^n} \bigr\}, d\bigr\> \\
+    \text{where }\bigl(
+      \Step[\pi,\sigma_i[x_i \mapsto v_{i-1}]]{e_i}{v_i,\pi, []}
+    \bigr)_{i=1}^{l}\\
+    \text{and }d =
+      \scondp{l \ne n \scondq \{\dec{Check}\}
+      \scondcolon v_0 \nequiv v_l \scondq \{\dec{Check},\dec{Effect}\}
+      \scondcolon \{\}}
+  \end{multline*}
+
+  We extend this notion to a state store~$\rho$ and a view~$\pi$, i.e., $\sem{normalize}(\rho)$ normalizing all of its entries, and~$\sem{normalize}(\pi)$ normalizing its state store:
+  \begin{alignat*}{2}
+    \sem{normalize}(\rho) &= \Bigl\<
+        [\Overline{\ell \mapsto r_\ell}]_{\ell \in \domain \rho},
+        \smashoperator{\bigcup_{\ell \in \domain \rho}} d_\ell
+    \Bigr\> && \text{ where } \sem{normalize}(\rho[\ell]) = \<r_\ell,d_\ell\>, \\
+    \sem{normalize}(\pi) &=
+      \pi \bigl\{ \fv{sttst}{\rho'},\fv{dec}{\pi.\field{dec} \setminus \{\dec{Check}\} \cup d} \bigr\} && \text{ where } \<\rho',d\> = \sem{normalize}(\pi.\field{sttst}).
+    \qedhere % TODO: qedhere does not work here well
+  \end{alignat*}
+\end{defn}
+
+\begin{defn}[Similarity]\label{def:similarity}
+  Two views are \emph{similar} iff they are equal under normalization:
+  \[
+    \pi \approx \pi'
+    \triangleiff
+    \sem{normalize}(\pi) = \sem{normalize}(\pi')
+  \]
+
+  We extend this notion to memories, i.e., $m$~and~$m'$ are \emph{$t$-similar} iff the descendants of~$t$ in $m$~and~$m'$ are all similar and the rest of them are equal:
+  \[
+    m \approx_t m'
+    \triangleiff
+    {}\land \begin{lgathered}
+      \forall p \in \sem{reachable}(m, t),\ m[p] \approx m'[p] \\
+      \forall p \notin \sem{reachable}(m, t),\ m[p] = m'[p] \\
+    \end{lgathered}
+  \]
+  where $\sem{reachable}(m, t)$ is the set of all paths in~$m$ that is reachable from the tree~$t$.
+\end{defn}
+
+We now state that evaluating a view similar to the original yields the same result (\cref{lem:simevalbody}), provided the view is \emph{valid} (\cref{def:validity}).
+
+\begin{defn}[Validity]\label{def:validity}
+  A view is \emph{valid} if it has only the states that are present in its component body.
+  More precisely,~$\pi$ is \emph{valid under~$\delta$} iff the domain of $\pi$'s state store is exactly the set of state labels of~$e$, where~$\pi.\field{spec} = \<C, v\>$ and~$\delta[C] = \<\lfun{x}{e}, \sigma\>$.
+  We extend this notion to tree memory: A tree memory~$m$ is valid under~$\delta$ iff its views are all valid under~$\delta$.
+\end{defn}
+
+Note that all views encountered during execution are valid.
+This follows from a syntactic restriction on component bodies: Hooks must appear only at the top level.
+This ensures that each \reacttt{useState} call in a component body is executed exactly once during initialization,
+so all views produced by~$\sem{init}$ are valid.
+
+\begin{restatable}[Similar Evaluations of Component Body]{lem}{simevallem}\label{lem:simevalbody}
+  Evaluating the component body of similar views produces the same value, view, and output buffer.
+  That is, for $\pi$ valid under $\delta$ where $\pi.\field{spec} = \<C,v\>$ and $\delta[C] = \<\lambda x.e,\sigma\>$,
+  if $\Step*<\phase{Succ}>[\pi,\sigma[x\mapsto v]]{e}{v',\pi', \omega}$,
+  we have $\Step*<\phase{Succ}>[\hat \pi,\sigma[x\mapsto v]]{e}{v',\pi', \omega}$ for all~$\hat\pi \approx \pi$.
+\end{restatable}
+
+Building on \cref{lem:simevalbody}, we conclude that the optimization---which replaces some views in memory with similar ones---preserves program behavior.
+Note that the output buffer~$\omega$ may differ if component bodies perform printing,
+since the optimization may omit their evaluation entirely.
+Nevertheless, the resulting memory remains identical, regardless of whether the optimization is applied.
+
+\begin{restatable}[Similar Transitions]{thm}{simtransthm}\label{thm:simtrans}
+  If a program transitions to a state in check mode~$\checkmode$ during execution, replacing it with a similar state results in the same final state as the original transition.
+  That is, if $\<e,\delta\> \smallstep^* \<t,m,\omega,\delta,\checkmode\> \smallstep \<t,m',\omega',\delta,\mu\>$, then for any $\hat m$ such that $m \approx_t \hat m$, we have $\<t,\hat m,\omega,\delta,\checkmode\> \smallstep \<t,m',\omega'',\delta,\mu\>$.
+  We also have~$\omega' = \omega''$ when the component bodies do not print.
+\end{restatable}
+
+Full proofs are provided in~\cref{app:chap:proofs}.
+
+\section{Conformance Test Suite}\label{sec:tests}
+Our test suite, which covers all~44 evaluation rules\footnote{See~\cref{app:sec:sem} for the complete set of rules.} comprising the operational semantics~(\cref{sec:sem}), contains 38~tests that cover 18~scenarios shown in \cref{tab:test} that compare the behaviors of programs under \Rtrace{} against React's behavior.
+We have constructed the tests ourselves, testing the \Rtrace{} interpreter (\cref{chap:impl}) as well.
+
+\begin{table}[t]
+  \caption{Empirical validation of \Rtrace{} against React behavior.}\label{tab:test}
+  \centering\smaller[2]
+  \begin{tabular}{rlrc}
+    \toprule
+        & \textbf{Scenarios} & \textbf{Tests \#} & \textbf{\Rtrace{}} \\
+    \midrule
+     S1 & No re-render w/o a setter call & 6 & \checkmark \\
+     S2 & Retries ($0<n<25$) w/ setter call during body eval & 4 & \checkmark \\
+     S3 & Infinite retries ($n\ge25$) w/ setter call during body eval & 1 & \checkmark \\
+     S4 & No re-render w/o Effects w/ setter call during body eval & 1 & \checkmark \\
+     S5 & No re-render w/ Effect w/o setter call & 2 & \checkmark \\
+     S6 & No re-render w/ Effect w/ id setter call & 1 & \checkmark \\
+     S7 & No re-render w/ Effect w/ setter calls composing to id & 2 & \checkmark \\
+     S8 & Re-renders ($0<n<100$) w/ Effect w/ setter call & 16 & \checkmark \\
+     S9 & Infinite re-renders ($n\ge100$) w/ Effect w/ diverging setter call & 2 & \checkmark \\
+    S10 & Re-render w/ child updating parent during Effect & 2 & \checkmark \\
+    S11 & Re-render w/ sibling updating another during Effect & 1 & \checkmark \\
+    S12 & Error w/ child updating parent during body eval & 1 & \checkmark \\
+    S13 & Non-trivial reconciliation & 4 & \checkmark \\
+    S14 & No re-render w/ direct object update & 1 & \checkmark \\
+    S15 & Re-render w/ idle but parent updates & 2 & \checkmark \\
+    S16 & User event sequence & 6 & \checkmark \\
+    S17 & Re-render w/ setter call from user event & 4 & \checkmark\rlap{${}^\dagger$} \\
+    S18 & Recursive view hierarchy & 2 & \checkmark \\
+    \bottomrule
+    && $38\mathrlap{{}^*}$ & \checkmark \\
+    &&&\hfill\llap{\smaller[1]${}^*$Some tests cover multiple scenarios.}\\
+    &&&\hfill\llap{\smaller[1]${}^\dagger$React's optimization changes some execution orders.}
+  \end{tabular}
+\end{table}
+
+It is difficult to unit test a single evaluation rule independently because running a React program inevitably leaves footprints on multiple rules, and we have chosen the test scenarios to exhibit the pitfalls explained in~\cref{chap:pit}, as well as to check the core aspects of React including render counts, side effect ordering, reconciliation, and event handling.
+For instance, although one of our test cases\footnote{\texttt{effect\_queue\_gets\_flushed\_on\_retry}} checks whether the effect queue gets flushed on retry, effectively testing rule \Rule{EvalMult}~(\cref{fig:evalmult}), it is simply categorized as S2~and~S8 in \cref{tab:test}.
+
+Notably, we test the boundaries of React that even experienced developers may find confusing.
+For instance, S12~in \cref{tab:test} covers attempting to update a parent's state during the evaluation of its child, which correctly produces an error in both implementations.
+Other scenarios include unnecessary re-rendering that modifies the view hierarchy~(S8--S11,~\cref{tab:test}; similar to examples in~\cref{sec:unnec}), constructing complex UI with recursive components~(S18,~\cref{tab:test}), and more.
+
+The tests consist of equivalent components implemented twice---once in \Rtrace{} and once in React---then comparing that they exhibit the same behavior.
+For example, to empirically check infinite retries~(S3,~\cref{tab:test}) on the React-side, we install an error boundary \citep{Met25Component} to catch an exception when a component reaches React's hard-coded limit of 25~retries.
+On the \Rtrace{}-side, we set the retry threshold to~25 and see whether the component did not stop rendering.
+For tests measuring the number of render cycles on the React-side, we indirectly measure the count by counting the prints inside an Effect.
+
+Almost all tests show identical behavior between \Rtrace{} and React's runtime, with one minor difference due to the optimization performed by React as discussed in~\cref{subsec:opt}.
+We might as well include this optimization in \Rtrace{} by adding a special flag and modifying \Rule{AppSetNormal}, but we deliberately chose not to in order to keep the clarity of our semantics.
+
+\Rtrace{} does not model a specific version of React: We have tested against the latest versions of every major React release since Hooks were introduced in~\href{https://www.npmjs.com/package/react/v/16.8.0}{16.8\,(Feb~2019)}.  % https://legacy.reactjs.org/docs/hooks-reference.html
+All test cases have been reproduced in versions~\href{https://www.npmjs.com/package/react/v/16.14.0}{16.14.0\,(Oct~2020)}, \href{https://www.npmjs.com/package/react/v/17.0.2}{17.0.2\,(Mar~2021)}, \href{https://www.npmjs.com/package/react/v/18.3.1}{18.3.1\,(Apr~2024)}, and \href{https://www.npmjs.com/package/react/v/19.1.0}{19.1.0\,(Mar~2025)}.
+
+The test suite is available alongside the \Rtrace{} interpreter at \href{https://github.com/Zeta611/react-trace}{\gh{Zeta611/react-trace}}.
