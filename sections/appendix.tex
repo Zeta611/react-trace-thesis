@@ -1,4 +1,4 @@
-\chapter{Full Operational Semantics of \Rtrace}\label{app:chap:full}
+\chapter{Full Operational Semantics}\label{app:chap:full}
 \section{Semantic Objects}\label{app:sec:dom}
 \begin{center}
   \begin{bnf}[rccll]
@@ -24,6 +24,10 @@
     ;;
     \delta : $\dom{DefTable}$ ::= $[\Overline[\ell]{C \mapsto \deftabent{x}{e}}]$ : component def table
     ;;
+  \end{bnf}
+\end{center}
+\begin{center}
+  \begin{bnf}[rccll]
     \ell :in: $\mathbb{N}$ : label
     ;;
     p :in: $\dom{Path}$ : tree path
@@ -104,7 +108,19 @@
     }{
       \Step{\letbind{x}{e_1}{e_2}}{v_2, \Sigma_2, \omega_1 \concat \omega_2}
     } \and
-    \input{semantics/eval-react}
+    \inferrule[AppFunc]{
+      \Step{e_1}{\clos{x}{e}{\sigma'}, \Sigma_1, \omega_1} \\
+      \Step[\Sigma_1, \sigma]{e_2}{v_2, \Sigma_2, \omega_2} \\
+      \Step[\Sigma_2, \sigma'[x \mapsto v_2]]{e}{v', \Sigma', \omega'}
+    }{
+      \Step{\app{e_1}{e_2}}{v', \Sigma', \omega_1 \concat \omega_2 \concat \omega'}
+    } \and
+    \input{semantics/eval-react} \and
+    \inferrule[Print]{
+      \Step{e}{v, \Sigma', \omega}
+    }{
+      \Step{\print{e}}{\<\>, \Sigma', \omega \concat [v]}
+    }
   \end{mathparpagebreakable}
 \end{center}
 
@@ -419,13 +435,13 @@
   \end{description}
 \end{proof}
 
-\chapter{Comparison of Reactive UI Frameworks}\label{app:sec:frameworks}
+\chapter{Comparison of Reactive UI Frameworks}\label{app:chap:frameworks}
 The categorization of reactive GUI web frameworks based on three properties---(a)~whether they re-read component specifications for re-rendering, (b)~how state updates are processed (queued or immediate), and (c)~which reactivity primitives they employ---are given in \cref{tab:frameworks}.
 
-\begin{table}[ht]
+\begin{table}[tbp]
   \centering
   \caption{Comparison of reactive UI frameworks.}\label{tab:frameworks}
-  \smaller[2]
+  \smaller[1]
   \begin{tabular}{llll}
     \toprule
     Framework & Re-read Spec. & State Updates & Reactivity Primitives \\

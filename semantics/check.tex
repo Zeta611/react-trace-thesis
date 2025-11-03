@@ -1,5 +1,5 @@
 \hfill\fbox{$m, \delta \vdash \sem{check}(t) = \<\mu, m', \omega\>$}
-\begin{mathpar}
+\begin{mathparpagebreakable}
   \inferrule[CheckConst]{ }{m, \delta \vdash \sem{check}(k) = \<\eloopmode, m, []\>} \and
   \inferrule[CheckClos]{ }{m, \delta \vdash \sem{check}(cl) = \<\eloopmode, m, []\>} \and
   \inferrule[CheckArray]{
@@ -42,4 +42,4 @@
   }{\textstyle
     m, \delta \vdash \sem{check}(p) = \<\rendermode, m'[p \mapsto \pi'\{\fv{child}{t'}\}], \omega \concat \omega'\>
   }
-\end{mathpar}
+\end{mathparpagebreakable}

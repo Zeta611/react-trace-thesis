@@ -174,7 +174,7 @@ This distinction exists because one evaluation rule (\Rule{AppSetNormal}) requir
 The whole-memory context is used to describe a component updating another, e.g., a button in a child component updating its parent's state.
 
 \begin{figure}[t]
-  \begin{center}
+  \centering
     \begin{minipage}{.27\textwidth}
       \begin{reactcode}
   let Bin n =
@@ -186,7 +186,6 @@ The whole-memory context is used to describe a component updating another, e.g.,
     \begin{minipage}{.73\textwidth}
       \includegraphics[width=\linewidth]{images/treemem.pdf}
     \end{minipage}
-  \end{center}
   \caption{Visualization of a tree memory and render step transitions for a simple recursive component.}\label{fig:bin}
 \end{figure}
 
@@ -293,14 +292,14 @@ To elaborate on how the transition \Rule{StepInit} evaluates the main expression
 \paragraph{Single Evaluation}
 We present how an expression is evaluated in a big-step semantics in \cref{fig:eval}.
 The rules relevant to the render logic are included here, which includes \reacttt{useState} and the \reacttt{useEffect} Hooks, component application, and state updates.
-Standard rules related to the base logic are not presented---\Rule{AppFunc} and \Rule{Print} are included for clarity.
+Standard rules related to the base logic are not presented.
 The complete operational semantics of expressions is available in~\cref{app:sec:sem}.
-\begin{figure}[t]
+\begin{figure}[thbp]
   \centering
   \hfill\fbox{$\Step<\phi><p>[\Sigma, \sigma]{e}{v, \Sigma', \omega}$}
-  \begin{mathpar}
+  \begin{mathparpagebreakable}
     \input{semantics/eval-react}
-  \end{mathpar}
+  \end{mathparpagebreakable}
   \caption{Evaluation of an expression (an excerpt).}\label{fig:eval}
 \end{figure}
 

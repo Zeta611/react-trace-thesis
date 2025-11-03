@@ -1,5 +1,5 @@
 \hfill\fbox{$\<e, \delta\> \text{ or }\<t, m, \omega, \delta, \mu\> \smallstep \<t, m', \omega', \delta, \mu'\>$}
-\begin{mathpar}
+\begin{mathparpagebreakable}
 \inferrule[StepInit]{
   \Step<\phase{Normal}><->[[], []]{e}{s, [], \omega} \\
   [] \vdash \sem{init}(s) = \<t, m, \omega'\>
@@ -22,4 +22,4 @@
 }{
   \<t, m, \omega, \delta, \eloopmode\> \smallstep \<t, m', \omega \concat \omega', \delta, \checkmode\>
 }
-\end{mathpar}
+\end{mathparpagebreakable}

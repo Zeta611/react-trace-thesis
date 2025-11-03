@@ -1,5 +1,5 @@
 \hfill\fbox{$m, \delta \vdash \sem{init}(s) = \<t, m', \omega\>$}
-\begin{mathpar}
+\begin{mathparpagebreakable}
   \inferrule[InitConst]{ }{m, \delta \vdash \sem{init}(k) = \<k, m, []\>} \and
   \inferrule[InitClos]{ }{m, \delta \vdash \sem{init}(cl) = \<cl, m, []\>} \and
   \inferrule[InitArray]{
@@ -18,4 +18,4 @@
   }{
     m, \delta \vdash \sem{init}(\<C, v\>) = \bigl\<p, m'[p \mapsto \pi\{\fv{dec}{\{\dec{Effect}\}}, \fv{child}{t}\}], \omega \concat \omega'\bigr\>
   }
-\end{mathpar}
+\end{mathparpagebreakable}

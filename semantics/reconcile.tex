@@ -1,5 +1,5 @@
 \hfill\fbox{$m, \delta \vdash \sem{reconcile}(t, s) = \<t', m', \omega\>$}
-\begin{mathpar}
+\begin{mathparpagebreakable}
   % TODO: Update the rule
   \inferrule[ReconcileArray]{
     \bigl(m_{i-1}, \delta \vdash \sem{reconcile}(t_i, s_i) = \<t_i', m_i, \omega_i\>\bigr)_{i = 1}^n
@@ -34,4 +34,4 @@
   }{
     m, \delta \vdash \sem{reconcile}(t, s) = \<t', m', \omega\>
   }
-\end{mathpar}
+\end{mathparpagebreakable}

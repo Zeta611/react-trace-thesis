@@ -1,5 +1,5 @@
 \hfill\fbox{$m \vdash \sem{commitEffs}(t) = \<m', \omega\>$}
-\begin{mathpar}
+\begin{mathparpagebreakable}
   \inferrule[CommitEffsConst]{ }{m \vdash \sem{commitEffs}(k) = \<m, []\>} \and
   \inferrule[CommitEffsClos]{ }{m \vdash \sem{commitEffs}(cl) = \<m, []\>} \and
   \inferrule[CommitEffsArray]{
@@ -23,4 +23,4 @@
   }{
     m \vdash \sem{commitEffs}(p) = \bigl\<m_n\bigl[p \mapsto m_n[p]\{\fv{dec}{m_n[p].\field{dec} \setminus \{\dec{Effect}\}}\}\bigr], {\textstyle\Concat_{i = 0}^n \omega_i}\bigr\>
   }
-\end{mathpar}
+\end{mathparpagebreakable}

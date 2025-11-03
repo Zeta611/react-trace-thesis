@@ -1,10 +1,4 @@
-\inferrule[AppFunc]{
-  \Step{e_1}{\clos{x}{e}{\sigma'}, \Sigma_1, \omega_1} \\
-  \Step[\Sigma_1, \sigma]{e_2}{v_2, \Sigma_2, \omega_2} \\
-  \Step[\Sigma_2, \sigma'[x \mapsto v_2]]{e}{v', \Sigma', \omega'}
-}{
-  \Step{\app{e_1}{e_2}}{v', \Sigma', \omega_1 \concat \omega_2 \concat \omega'}
-} \and
+
 \inferrule[AppCom]{
   \Step{e_1}{C, \Sigma_1, \omega_1} \\
   \Step[\Sigma_1, \sigma]{e_2}{v, \Sigma_2, \omega_2}
@@ -108,9 +102,4 @@
       []
     \end{spreadlines}
   }
-} \and
-\inferrule[Print]{
-  \Step{e}{v, \Sigma', \omega}
-}{
-  \Step{\print{e}}{\<\>, \Sigma', \omega \concat [v]}
 }

@@ -1,5 +1,5 @@
 \hfill\fbox{$\Step*<\phi><p>[\pi, \sigma]{e}{s, \pi', \omega}$}
-\begin{mathpar}
+\begin{mathparpagebreakable}
   \inferrule[EvalOnce]{
     \Step[\pi\{\fv{dec}{\pi.\field{dec}\setminus\{\dec{Check}\}},\fv{effq}{[]}\}, \sigma]{e}{s, \pi', \omega} \\
     \dec{Check} \notin \pi'.\field{dec} \\
@@ -15,4 +15,4 @@
   }{
     \Step*[\pi, \sigma]{e}{s', \pi'', \omega \concat \omega'}
   }
-\end{mathpar}
+\end{mathparpagebreakable}
