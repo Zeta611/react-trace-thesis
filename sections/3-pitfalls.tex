@@ -10,7 +10,7 @@ There are two different problems in this category of bugs: an infinite render lo
 
 
 \subsection{Infinite Render Loop with an Effect}\label{subsec:infloop}
-Using \reacttt{useEffect} can easily lead to an infinite render loop---searching StackOverflow with the query `\textsf{"useEffect" "infinite"}' returns more than 1600~results \citep{Jay25Archive}.
+Using \reacttt{useEffect} can easily lead to an infinite render loop---searching StackOverflow with the query `\texttt{"useEffect" "infinite"}' returns more than 1600~results \citep{Jay25Archive}.
 We describe the essence of the issue here.
 
 Infinite render loop occurs because setting state within an Effect triggers the runtime to \dec{Check}\footnote{We use \dec{red boldfaced sans-serif} to emphasize a decision, whose semantic meaning is formally introduced in~\cref{sec:dom}.} if the state has changed, which is implemented by invoking the component body again.
@@ -18,8 +18,8 @@ If the state whose setter function is called is actually modified, the component
 Essentially, this \dec{Check}-\dec{Effect} decision cycle creates a render loop.
 In the following, we show a basic example that renders infinitely many times due to this mechanism.
 
-\begin{wrapfigure}[4]{l}{0.35\linewidth}
-  \vspace{-1.2\intextsep}
+\begin{wrapfigure}[3]{l}{0.4\linewidth}
+  \vspace{-1.5\intextsep}
   \begin{reactcode}
 let Inf x =
   let (s, setS) = useState 0 in
@@ -39,7 +39,7 @@ A generalized issue is presented in~\cref{sec:unnec}.
 
 
 \subsection{Top-Level Call to a Setter Function}\label{subsec:topset}
-Infinite loop caused by a top-level call to a setter function is also a common source of confusion---the most frequent StackOverflow question with both the \textsf{[reactjs]} and \textsf{[infinite-loop]} tag is about this issue \citep{Teh19Updating}.
+Infinite loop caused by a top-level call to a setter function is also a common source of confusion---the most frequent StackOverflow question with both the \texttt{[reactjs]} and \texttt{[infinite-loop]} tag is about this issue \citep{Teh19Updating}.
 
 When a component sets a state in the top-level, the runtime immediately \dec{Check}s the component again by re-evaluating it.
 This causes React to discard the returned view and re-read the component.% body with updated states.
@@ -47,8 +47,8 @@ This causes React to discard the returned view and re-read the component.% body 
 An active \dec{Check} decision during reading a component is treated specially as a signal to \emph{retry} the component before the render, unlike a \dec{Check} decision while running an Effect.
 Therefore, an unconditional top-level call to a setter function causes an infinite loop and is never correct.
 
-\begin{wrapfigure}[4]{r}{0.33\linewidth}
-  \vspace{-\intextsep}
+\begin{wrapfigure}[4]{r}{0.37\linewidth}
+  \vspace{-0.9\intextsep}
   \begin{reactcode}
 let Inf2 x =
   let (s, setS) = useState x in
@@ -65,10 +65,8 @@ Even if the state is always set to the same value~|0|, |Inf2| falls into an infi
 
 
 \section{Unnecessary Re-Rendering}\label{sec:unnec}
-A simple example of an unnecessary re-render triggered by the \reacttt{useEffect} Hook is demonstrated in the following component \reacttt{Flicker}.\,
-\reacttt{Flicker} starts with an initial state~|0|, and immediately after%
-\begin{wrapfigure}[4]{l}{0.34\linewidth}
-  \vspace*{-.2\intextsep}
+\begin{wrapfigure}[4]{l}{0.4\linewidth}
+  \vspace*{-.5\intextsep}
   \begin{reactcode}
 let Flicker x =
   let (s, setS) = useState x in
@@ -76,14 +74,15 @@ let Flicker x =
   s;;
 Flicker 0
   \end{reactcode}
-\end{wrapfigure}%
-the render, it updates the state to~|42|, triggering the runtime to \dec{Check} the component and causes a re-render.
+\end{wrapfigure}
+A simple example of an unnecessary re-render triggered by the \reacttt{useEffect} Hook is demonstrated in \reacttt{Flicker} on the left.
+\reacttt{Flicker} starts with an initial state~|0|, and immediately after the render, it updates the state to~|42|, triggering the runtime to \dec{Check} the component and causes a re-render.
 A swift user might even see the transient state~|0| and notice a ``flicker'' in the UI.
 
 While technically a similar problem to the one discussed in~\cref{subsec:infloop}, this is a performance issue, in contrast to the other which was an evident bug.
 When the component needs to access an external resource in order to set a state, setting a state after the call to \reacttt{useEffect} may be necessary, but in other scenarios, it is a waste of a render cycle to do so.
 
-\begin{wrapfigure}[6]{r}{0.39\linewidth}
+\begin{wrapfigure}[5]{r}{0.42\linewidth}
   \vspace*{-\intextsep}
   \begin{reactcode}
 let Child setS =

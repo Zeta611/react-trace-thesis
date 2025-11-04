@@ -1,7 +1,7 @@
 \chapter{Peculiarities of React Hooks}\label{chap:over}
-In this section, we examine the peculiarities of the \reacttt{useState}~(\cref{sec:useState}) and \reacttt{useEffect}~(\cref{sec:useEffect}) Hooks.
+In this chapter, we examine the peculiarities of \reacttt{useState}~(\cref{sec:useState}) and \reacttt{useEffect} (\cref{sec:useEffect}).
 
-We introduce a simple applicative language for \Rtrace{} that captures the essence of React Hooks and use it throughout the paper to illustrate the examples and the semantics.
+We introduce a simple applicative language for \Rtrace{} that captures the essence of React Hooks and use it throughout the thesis to illustrate the examples and the semantics.
 Thus we decouple ourselves from the subtleties of the complex semantics of JS \citep{RyuPar24JavaScript}, which is beyond the scope of our research.
 % In fact, it is possible to use React in tandem with other languages like ReScript (\href{https://rescript-lang.org/}{rescript-lang.org}) and ReasonML (\href{https://reasonml.github.io/}{reasonml.github.io}), further highlighting the need for decoupling React from JS.
 
@@ -24,16 +24,22 @@ We only consider programs~$P$ whose main expressions evaluate to a view.
 
 \begin{figure}[t]
   \centering
-  \begin{minipage}{\textwidth}
-    \begin{flalign*}
-      x, C &\in \dom{Var} & n &\in \mathbb{Z} & \ell &\in \mathbb{N} &
-      \dom{Prog}\ P &\Coloneq \Overline{D}\ e & \dom{ComDef}\ D &\Coloneq \cfunc{C}{x}{e}
-    \end{flalign*}
-  \end{minipage}
   \begin{bnf}[rccll]
+    x, C : :in: \dom{Var}
+    ;;
+    n : :in: $\mathbb{Z}$
+    ;;
+    \ell :in: $\mathbb{N}$
+    ;;
+    P : \dom{Prog} ::= $\Overline{D}\ e$
+    ;;
+    D : \dom{ComDev} ::= $\cfunc{C}{x}{e}$
+    ;;
     e : \dom{Exp} ::=
-    | () // true // false // $n$ // $x$ // $C$ // $e \oplus e$ // $[\Overline{e}]$ // $\print{e}$ // $\cond{e}{e}{e}$ // $\seq{e}{e}$
-    | $\func{x}{e}$ // $\app{e}{e}$ // $\letbind{x}{e}{e}$ // $\stbind{x}{e}{e}$ // $\eff{e}$
+    | () // true // false // $n$ // $x$ // $C$
+    | $e \oplus e$ // $[\Overline{e}]$ // $\print{e}$ // $\cond{e}{e}{e}$ // $\seq{e}{e}$
+    | $\func{x}{e}$ // $\app{e}{e}$ // $\letbind{x}{e}{e}$
+    | $\stbind{x}{e}{e}$ // $\eff{e}$
   \end{bnf}
   \caption{Syntax of \Rtrace.}\label{fig:syntax}
 \end{figure}
@@ -53,17 +59,16 @@ We now explain how these Hooks are used in React components in~\cref{sec:useStat
 \section{The Peculiarity of \textbf{\texttt{useState}}}\label{sec:useState}
 Among the top~45 most frequent StackOverflow questions with the tag \textsf{[react-hooks]}, three---including the most frequent question by \citet{Pra19useState}---are about the semantics and timing of the \reacttt{useState} Hook and its state updates \citep{Pra19useState,vad18React,Tan19React}.
 
-\begin{wrapfigure}[4]{l}{0.23\linewidth}
+\begin{wrapfigure}[3]{l}{0.383\linewidth}
   \vspace*{-\intextsep}
   \begin{reactcode}
 let Counter x =
   let s := 0 in
-  [s, button (fun _ ->
-    s := s+2)];;
+  [s, button (fun _ -> s := s+2)];;
 Counter 0
   \end{reactcode}
 \end{wrapfigure}
-\noindent Consider a counter that increments its value by two when clicked.
+\noindent Consider a counter that adds its value by two when clicked.
 If our language had mutable variables, one might na\"ively write the code on the left by defining a mutable variable~\reacttt{s} and adding two to it when the button is clicked.
 However, this approach presents two significant problems:
 \begin{enumerate}
@@ -75,8 +80,8 @@ The \reacttt{useState} Hook addresses these issues by providing functionality an
 Instead of directly modifying state through assignment, the state is managed by the React runtime and can only be updated by the setter function returned by the Hook.
 The \reacttt{useState} Hook allows the runtime to be aware of the state and handle its bookkeeping, therefore addressing the aforementioned two problems.
 
-\begin{wrapfigure}[5]{r}{0.33\linewidth}
-  \vspace*{-\intextsep}
+\begin{wrapfigure}[4]{r}{0.34\linewidth}
+  \vspace*{-1.1\intextsep}
   \begin{reactcode}
 let Counter x =
   let (s, setS) = useState x in
@@ -101,7 +106,7 @@ This raises a question:
 
 To investigate when the callback provided to \reacttt{setS} is executed, we can add diagnostic \reacttt{print}s:
 \begin{center}
-  \begin{minipage}{.5\linewidth}
+  \begin{minipage}{.6\linewidth}
     \begin{reactcode}
 let Counter x =
   print "Counter";
@@ -118,7 +123,7 @@ Counter 0
 Counter
 Return
     \end{console}
-    {\footnotesize\hspace{2em}\reacttt{button} \faHandPointUp[regular]}
+    {\footnotesize\vspace{-.6\baselineskip}\hspace{2em}\reacttt{button} \faHandPointUp[regular]}
     \begin{console}[frame=bottomline, firstnumber=3]
 Counter
 Update
@@ -140,8 +145,8 @@ Effect allows developers to run arbitrary logic after the render.
 Note that in React, it is possible to specify a set of variables called \emph{dependencies,} so that the Effect runs only if those variables have changed.
 We only consider the simplest form of \reacttt{useEffect} in our language, where the Effect is run unconditionally after each render, and it is a straightforward extension to support dependencies.
 
-\begin{wrapfigure}[7]{l}{0.35\linewidth}
-  \vspace*{-\intextsep}
+\begin{wrapfigure}[5]{l}{0.4\linewidth}
+  \vspace*{-1.3\intextsep}
   \begin{reactcode}
 let Counter x =
   let (s, setS) = useState x in

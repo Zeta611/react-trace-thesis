@@ -31,6 +31,7 @@
   numbersep=8pt,
   xleftmargin=0.5em,
   fontsize=\footnotesize,
+  baselinestretch=1.2,
 }
 
 \RequirePackage{listings}
@@ -90,7 +91,7 @@
 
 \lstdefinestyle{snippetReact}{
   language=React,
-  basicstyle=\linespread{1.1}\footnotesize\ttfamily,
+  basicstyle=\linespread{1.2}\footnotesize\ttfamily,
   numbers=left,
   numberstyle=\tiny,
   numbersep=4pt,
@@ -109,6 +110,7 @@
   keywordstyle=[1]\color{Black},
   identifierstyle=\color{Black},
   basicstyle=\ttfamily,
+  breaklines=true,
 }
 
 \lstnewenvironment{reactcode}[1][]{\lstset{style=snippetReact,#1}}{}

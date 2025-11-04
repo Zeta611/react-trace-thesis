@@ -16,14 +16,15 @@ Developers define different methods to be called at different lifecycle phases--
 React, however, introduces a different model: a single function component plays multiple roles---the same component is called for both creating a new view and updating an existing view.
 To enable this, React switches between different implementations of the same Hook at runtime depending on the rendering phase.
 
-\begin{wrapfigure}[4]{l}{0.387\linewidth}
-  \vspace*{-1.2\intextsep}
+\begin{wrapfigure}[4]{l}{0.45\linewidth}
+  \vspace*{-1.1\intextsep}
   \begin{reactcode}
 function Counter({ x }) {
   const [s, setS] = useState(() => x);
   const h = () => setS((s) => s+1);
-  return <button onClick={h}> {s}
-    </button>; }
+  return <button onClick={h}>
+    {s}
+  </button>; }
   \end{reactcode}
 \end{wrapfigure}
 \noindent The \reacttt{Counter} component on the left demonstrates the \reacttt{useState} Hook for managing state.
@@ -37,8 +38,8 @@ This example illustrates how even a simple component like \reacttt{Counter} has 
 Another peculiarity is that developers \emph{cannot} use JavaScript (JS) variables and direct assignments to manage a component's state.
 In the above example, assigning a new value to~\reacttt{s} does not update the state of~\reacttt{Counter}---\reacttt{setS} must be used to update the state.
 
-\begin{wrapfigure}[8]{r}{0.44\linewidth}
-  \vspace*{-.8\intextsep}
+\begin{wrapfigure}[7]{r}{0.5\linewidth}
+  \vspace*{-.7\intextsep}
   \begin{reactcode}
 function Cond() {
   const [b, setB] = useState(() => false);
@@ -47,8 +48,9 @@ function Cond() {
     return s;
   } else {
     const h = () => setB(b => !b);
-    return <button onClick={h}> Show
-      </button>; } }
+    return <button onClick={h}>
+      Show
+    </button>; } }
   \end{reactcode}
 \end{wrapfigure}
 Moreover, developers must adhere to specific rules imposed by React, collectively known as the \emph{Rules of React} \citep{Met25Rules}.
@@ -75,7 +77,7 @@ We present \Rtrace, an operational semantics of React Hooks:
     \Rtrace{} is \emph{high-level enough} to abstract away implementation details and \emph{precise enough} to aid developers in reasoning about rendering behavior~(\cref{sec:example}).
     Our semantics helps developers clearly understand confusing UI bugs like infinite re-rendering~(\cref{chap:pit}).
 
-  \item \textbf{\Rtrace{} is a foundation for building semantic-based tools.}
+  \item \textbf{\Rtrace{} is a foundation for building semantic-based developer tools.}
     \Rtrace{} provides a semantics for React Hooks~(\cref{chap:sem}), which is the first step in designing any semantic-based tool, such as an abstract interpreter \citep{CouCou77Abstract,RivYi20Introduction}.
     As an example for a semantic-based tool based on \Rtrace, we present an interactive tool that explains and visualizes the behavior of React programs~(\cref{chap:impl}).
 
@@ -88,3 +90,5 @@ We present \Rtrace, an operational semantics of React Hooks:
 We introduce \reacttt{useState} and \reacttt{useEffect} and describe challenges in understanding them in~\cref{chap:over}, and illustrate common pitfalls from their interactions in~\cref{chap:pit}.
 We formalize React Hook semantics in~\cref{chap:sem}, present a \Rtrace-definitional interpreter and visualizer in~\cref{chap:impl}, and demonstrate conformance with React in~\cref{chap:rules}.
 We discuss extensions and implications in~\cref{chap:discussion}, compare with related work in~\cref{chap:related}, and conclude with future work in~\cref{chap:conclusion}.
+
+This work was published under the same title at OOPSLA~2025 \citep{LeeAhnYi25React}.
