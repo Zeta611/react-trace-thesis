@@ -1,5 +1,5 @@
 \chapter{Related Work}\label{chap:related}
-\paragraph{Research on React}
+\section{Research on React}
 Our work presents the first formal semantics for React's function components and Hooks, which have become the standard for modern React applications.
 Moreover, we deliberately decouple the semantics of React and Hooks from JS, enabling reasoning about Hooks independently from the host language.
 This approach contrasts with previous work on classed-based React components by \citet{MadLhoTip20Semantics}, who formalized a core calculus~\Lreact{} upon~\Ljs{} \citep{GuhSafKri10Essence} that captures React's component lifecycle and reconciliation.
@@ -8,29 +8,29 @@ While our research aims to faithfully model the actual React runtime, \citet{Cri
 Their semantics for general document languages demonstrates how features like document references interact with documents written in a React-like language using a simplified runtime, rather than attempting to capture the full complexity of React's behavior.
 
 
-\paragraph{React Development Tools}
+\section{React Development Tools}
 \Rtrace{} provides a theoretical foundation for building practical tools grounded on the semantics of Hooks, unlike existing approaches limited to runtime detection or syntactic checking.
 This semantics-based approach contrasts with tools like ESLint (\href{https://eslint.org}{eslint.org}), a \emph{de facto} standard static analyzer that syntactically checks code to prevent basic errors when writing React components.
 Similarly, runtime libraries such as \texttt{why-did-you-render} (\href{https://github.com/welldone-software/why-did-you-render}{\gh{welldone-software/why-did-you-render}}) and React Scan (\href{https://react-scan.com/}{react-scan.com}) detect (re-)renders by monkey patching and inspecting the React library at runtime but lack the formal framework to explain why these behaviors occur.
 
 
-\paragraph{Functional Reactive GUI Frameworks}
+\section{Functional Reactive GUI Frameworks}
 React borrows concepts from functional reactive programming (FRP) \citep{EllHud97Functional} but implements them quite differently.
 While React embraces declarative components, it requires explicit state management via \reacttt{useState} and provides escape hatches through \reacttt{useEffect}.
 This differs significantly from FRP web frameworks which use signals as reactive primitives.
 Notable FRP web frameworks include Flapjax \citep{MeyGuhBasCooGreBroKri09Flapjax}, Ur/Web \citep{Chl15UrWeb,Chl15Optimizing}, and the early versions of Elm \citep{CzaCho13Asynchronous}. % which formalized Featherweight Elm with a translation to Concurrent ML \citep{Rep91CML}.
 
-\paragraph{The Elm Architecture}
+\section{The Elm Architecture}
 The Elm programming language (\href{https://elm-lang.org/}{elm-lang.org}) has moved on from FRP and settled on \emph{The Elm Architecture (TEA)} or the \emph{Model-View-Update (MVU)} pattern, which has been formalized as~\Lmvu{} \citep{Fow20ModelViewUpdateCommunicate}.
 In TEA, there is a clear separation between a model and a view, where a message is dispatched from the view to update the model through an update function, creating a unidirectional data flow \citep{Fel20Elm}.
 One can follow a similar pattern in React if a state management library like Redux (\href{https://redux.js.org/}{redux.js.org}) is used.
 
-\paragraph{Multi-tier Programming}
+\section{Multi-tier Programming}
 In practice, React applications span multiple \emph{tiers}---client, server, and database---requiring developers to manually maintain coherency between them.
 Full stack React frameworks such as Next.js (\href{https://nextjs.org/}{nextjs.org}) and Remix (\href{https://remix.run/}{remix.run}) borrow ideas from \emph{tierless} or \emph{multi-tier}~(MT) languages to allow developers to develop both the client- and server-side in a single program.
 MT languages like Ur/Web \citep{Chl15UrWeb,Chl15Optimizing} (an ML-like language with whole-program optimization), \textsc{Eliom} \citep{RadVouBal16Eliom,RadPapVouBal16Eliom} (an extension of OCaml focusing on modularity), Hop \citep{SerGalLoi06Hop,BouLuoRezSer12Reasoning} (a dynamically typed Scheme-based framework), and Links \citep{CooLinWadYal07Links} (an ML-like language with an effect system that compiles to SQL and JS) enable higher-level reasoning about the whole system while providing stronger safety guarantees \citep{WeiWirSal21Survey}.
 
-\paragraph{JavaScript and Web Semantics}
+\section{JavaScript and Web Semantics}
 Our work extends the rich tradition of formalizing web technologies by providing a formal model of React Hooks, complementing existing work on web semantics.
 Numerous formal models of JS have been proposed \citep{GuhSafKri10Essence,MafMitTal08Operational,ParSteAndRos15KJS,PolCarLerPomKri12Tested,FraMakNauWooGar18JaVerT,MadLhoTip17Model}, including the recent work on mechanized extraction of the prose ECMA-262 specification by \citet{ParParAnRyu21JISET}.
 WebSpec \citep{VerFarBerTemSquMaf23WebSpec} provides a formal browser model in Rocq (formerly known as Coq) to verify browser security.

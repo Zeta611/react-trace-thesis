@@ -89,8 +89,8 @@ Therefore, \dec{Effect} is added iff either some state value differs from its or
 There is a subtle discrepancy between our semantics and the React runtime due to an optimization:
 When a state update callback returns the same value as the current state, React skips re-evaluating the component body.
 
-\begin{wrapfigure}[7]{l}{0.377\linewidth}
-  \vspace*{-\intextsep}
+\begin{wrapfigure}[5]{l}{0.43\linewidth}
+  \vspace*{-1.4\intextsep}
   \begin{reactcode}
 let Counter _ =
   print 0;
@@ -102,7 +102,7 @@ let Counter _ =
 Counter ()
   \end{reactcode}
 \end{wrapfigure}
-\noindent In our semantics, clicking the button prints~\verb+0\0\1\2\3+.
+\noindent According to our semantics, clicking the button prints~\verb|0\0\1\2\3|.
 The first~\verb+0+ is printed during the initial render.
 When the button is clicked after the render, the event handler queues the state updates without printing anything.
 Then, during the second render triggered by the state updates, another~\verb+0+ is printed.
@@ -131,7 +131,7 @@ which is defined in terms of \emph{normalization} (\cref{def:normalization})---a
 \begin{defn}[Purity]\label{def:purity}
   A closure~$\<\lfun x e, \sigma\>$ is \emph{pure} iff
   the application of any value~$v$ does not cause any side effects.
-  That is, for all~$\Sigma$ and~$v$, we have~$\Step[\Sigma,\sigma[x\mapsto v]]{e}{\_,\Sigma, []}$
+  That is, for all~$\Sigma$ and~$v$, we have~$\Step[\Sigma,\sigma[x\mapsto v]]{e}{\_,\Sigma, []}$.
 \end{defn}
 
 \begin{defn}[Normalization]\label{def:normalization}
@@ -152,15 +152,15 @@ which is defined in terms of \emph{normalization} (\cref{def:normalization})---a
   \end{multline*}
 
   We extend this notion to a state store~$\rho$ and a view~$\pi$, i.e., $\sem{normalize}(\rho)$ normalizing all of its entries, and~$\sem{normalize}(\pi)$ normalizing its state store:
-  \begin{alignat*}{2}
-    \sem{normalize}(\rho) &= \Bigl\<
+  \begin{flalign*}
+    \hspace{69.9pt}\sem{normalize}(\rho) &= \begin{multlined}[t]\Bigl\<
         [\Overline{\ell \mapsto r_\ell}]_{\ell \in \domain \rho},
         \smashoperator{\bigcup_{\ell \in \domain \rho}} d_\ell
-    \Bigr\> && \text{ where } \sem{normalize}(\rho[\ell]) = \<r_\ell,d_\ell\>, \\
-    \sem{normalize}(\pi) &=
-      \pi \bigl\{ \fv{sttst}{\rho'},\fv{dec}{\pi.\field{dec} \setminus \{\dec{Check}\} \cup d} \bigr\} && \text{ where } \<\rho',d\> = \sem{normalize}(\pi.\field{sttst}).
-    \qedhere % TODO: qedhere does not work here well
-  \end{alignat*}
+    \Bigr\> \\ \text{where } \sem{normalize}(\rho[\ell]) = \<r_\ell,d_\ell\>,
+    \end{multlined}\\
+    \sem{normalize}(\pi) &= \begin{multlined}[t]\pi \bigl\{ \fv{sttst}{\rho'},\fv{dec}{\pi.\field{dec} \setminus \{\dec{Check}\} \cup d} \bigr\} \\ \text{where } \<\rho',d\> = \sem{normalize}(\pi.\field{sttst}).\hspace{70pt}\qedhere % TODO: qedhere does not work here well
+    \end{multlined}
+  \end{flalign*}
 \end{defn}
 
 \begin{defn}[Similarity]\label{def:similarity}
@@ -259,7 +259,7 @@ Notably, we test the boundaries of React that even experienced developers may fi
 For instance, S12~in \cref{tab:test} covers attempting to update a parent's state during the evaluation of its child, which correctly produces an error in both implementations.
 Other scenarios include unnecessary re-rendering that modifies the view hierarchy~(S8--S11,~\cref{tab:test}; similar to examples in~\cref{sec:unnec}), constructing complex UI with recursive components~(S18,~\cref{tab:test}), and more.
 
-The tests consist of equivalent components implemented twice---once in \Rtrace{} and once in React---then comparing that they exhibit the same behavior.
+The tests consist of equivalent components implemented twice---once in \textsc{\textsf{React\--tRace}} and once in React---then comparing that they exhibit the same behavior.
 For example, to empirically check infinite retries~(S3,~\cref{tab:test}) on the React-side, we install an error boundary \citep{Met25Component} to catch an exception when a component reaches React's hard-coded limit of 25~retries.
 On the \Rtrace{}-side, we set the retry threshold to~25 and see whether the component did not stop rendering.
 For tests measuring the number of render cycles on the React-side, we indirectly measure the count by counting the prints inside an Effect.
@@ -267,7 +267,7 @@ For tests measuring the number of render cycles on the React-side, we indirectly
 Almost all tests show identical behavior between \Rtrace{} and React's runtime, with one minor difference due to the optimization performed by React as discussed in~\cref{subsec:opt}.
 We might as well include this optimization in \Rtrace{} by adding a special flag and modifying \Rule{AppSetNormal}, but we deliberately chose not to in order to keep the clarity of our semantics.
 
-\Rtrace{} does not model a specific version of React: We have tested against the latest versions of every major React release since Hooks were introduced in~\href{https://www.npmjs.com/package/react/v/16.8.0}{16.8\,(Feb~2019)}.  % https://legacy.reactjs.org/docs/hooks-reference.html
-All test cases have been reproduced in versions~\href{https://www.npmjs.com/package/react/v/16.14.0}{16.14.0\,(Oct~2020)}, \href{https://www.npmjs.com/package/react/v/17.0.2}{17.0.2\,(Mar~2021)}, \href{https://www.npmjs.com/package/react/v/18.3.1}{18.3.1\,(Apr~2024)}, and \href{https://www.npmjs.com/package/react/v/19.1.0}{19.1.0\,(Mar~2025)}.
+\Rtrace{} does not model a specific version of React: We have tested against the latest versions of every major React release since Hooks were introduced in~\href{https://www.npmjs.com/package/react/v/16.8.0}{16.8 (Feb~2019)}.  % https://legacy.reactjs.org/docs/hooks-reference.html
+All test cases have been reproduced in versions~\href{https://www.npmjs.com/package/react/v/16.14.0}{16.14.0\,(Oct~2020)}, \href{https://www.npmjs.com/package/react/v/17.0.2}{17.0.2 (Mar~2021)}, \href{https://www.npmjs.com/package/react/v/18.3.1}{18.3.1\,(Apr~2024)}, and \href{https://www.npmjs.com/package/react/v/19.1.0}{19.1.0\,(Mar~2025)}.
 
-The test suite is available alongside the \Rtrace{} interpreter at \href{https://github.com/Zeta611/react-trace}{\gh{Zeta611/react-trace}}.
+The test suite is available at \href{https://github.com/Zeta611/react-trace}{\gh{Zeta611/react-trace}} alongside the \Rtrace{} interpreter.

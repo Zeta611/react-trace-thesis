@@ -152,16 +152,16 @@
 \RequirePackage{titlesec}
 
 % Bibliography
-\RequirePackage[citestyle=acmauthoryear]{biblatex}
+\RequirePackage[citestyle=acmauthoryear,maxbibnames=99]{biblatex}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Page layout configuration %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\setlength{\paperwidth}{182mm}
-\setlength{\paperheight}{257mm}
-\setlength{\textwidth}{132mm}
-\setlength{\textheight}{192mm}
+\setlength{\paperwidth}{188mm}
+\setlength{\paperheight}{258mm}
+\setlength{\textwidth}{138mm}
+\setlength{\textheight}{193mm}
 \addtolength{\hoffset}{-1in}
 \addtolength{\voffset}{-1in}
 \setlength{\topmargin}{30mm}
@@ -241,39 +241,20 @@
     \newpage
     \null
 
-    % 외표지
+    % 표지
     \thispagestyle{empty}
     \begin{center}
-      \fontsize{18}{21pt}\selectfont
+      \fontsize{16}{19}\selectfont
       \textsc{M.S.~Thesis} \\[1cm]
-      \fontsize{24pt}{27pt}\selectfont
-      \@title \\[0.5cm]
-      \fontsize{18pt}{21pt}\selectfont
-      \@titlealt \\
+      \fontsize{22}{26}\selectfont
+      \@title \\[0.8cm]
+      \fontsize{16}{19}\selectfont
+      \@titlealt \\[2cm]
       \vfill
-      \fontsize{18pt}{21pt}\selectfont
+      \fontsize{14}{17}\selectfont
       \@graduationdate \\
       \vfill
-      \fontsize{18pt}{21pt}\selectfont
-      \@affiliation \\[0.5cm]
-      \textsc{\@author}
-    \end{center}
-    \newpage
-
-    % 내표지
-    \thispagestyle{empty}
-    \begin{center}
-      \fontsize{18}{21pt}\selectfont
-      \textsc{M.S.~Thesis} \\[1cm]
-      \fontsize{24pt}{27pt}\selectfont
-      \@title \\[0.5cm]
-      \fontsize{18pt}{21pt}\selectfont
-      \@titlealt \\
-      \vfill
-      \fontsize{18pt}{21pt}\selectfont
-      \@graduationdate \\
-      \vfill
-      \fontsize{18pt}{21pt}\selectfont
+      \fontsize{16}{19}\selectfont
       \@affiliation \\[0.5cm]
       \textsc{\@author}
     \end{center}
@@ -281,35 +262,38 @@
 
     % 인준지
     \thispagestyle{empty}
+    \enlargethispage{2\baselineskip}
     \begin{center}
-      \fontsize{20pt}{23pt}\selectfont
-      \@title \\[0.5cm]
-      \fontsize{18pt}{21pt}\selectfont
+      \fontsize{22}{26}\selectfont
+      \@title \\[0.8cm]
+      \fontsize{16}{19}\selectfont
       \@titlealt \\
       \vfill
-      \fontsize{16pt}{19pt}\selectfont
-      지도교수~~\make_spaced:V \@advisor \\
-      \fontsize{18pt}{21pt}\selectfont
+      \fontsize{14}{17}\selectfont
+      지도교수\hspace{1em}\make_spaced:V \@advisor \\
+      \fontsize{16}{19}\selectfont
       이~논문을~공학석사~학위~논문으로~제출함 \\
-      \fontsize{16pt}{19pt}\selectfont
+      \fontsize{14}{17}\selectfont
       \@date \\
       \vfill
-      \fontsize{18pt}{21pt}\selectfont
+      \fontsize{16}{19}\selectfont
       서울대학교~대학원 \\
-      \fontsize{16pt}{19pt}\selectfont
+      \fontsize{14}{17}\selectfont
       컴퓨터공학부 \\
-      \fontsize{18pt}{21pt}\selectfont
+      \fontsize{16}{19}\selectfont
       \make_spaced:V \@approvalauthor \\
       \vfill
       \@approvalauthor의~공학석사~학위논문을~인준함 \\
-      \fontsize{16pt}{19pt}\selectfont
+      \fontsize{14}{17}\selectfont
       \@approvaldate \\
       \vfill
+      \hbadness=10000
       \begin{tblr}{colspec={c Q[c,8em] c}}
         \makebox[4em][s]{위원장} & \make_spaced:n { \@committeechair } & (인) \\
         \makebox[4em][s]{부위원장} & \make_spaced:n { \@committeevchair } & (인) \\
         \makebox[4em][s]{위원} & \make_spaced:n { \@committeemember } & (인)
       \end{tblr}
+      \hbadness=1000
     \end{center}
     \newpage
   }

@@ -87,7 +87,7 @@ To model the React machinery, we extend base values~$\dom{Val}$:
 % \begin{minipage}{\linewidth} % To prevent pagebreak before the center env
   % \vspace{\abovedisplayskip}
   \begin{center}
-    \begin{minipage}{0.4791\textwidth}
+    \begin{minipage}{0.484\textwidth}
       \begin{center}
         \begin{bnf}[rccll]
           v : $\dom{Val}$ ::=  $\dotsb$ // $C$  // $cs$ // $[\Overline{s}]$ // $\<\ell, p\>$ :
@@ -98,7 +98,7 @@ To model the React machinery, we extend base values~$\dom{Val}$:
         \end{bnf}
       \end{center}
     \end{minipage}%
-    \begin{minipage}{0.4791\textwidth}
+    \begin{minipage}{0.484\textwidth}
       \begin{center}
         \begin{bnf}[rccll]
           \delta : $\dom{DefTable}$ ::= $[\Overline[\ell]{C \mapsto \deftabent{x}{e}}]$ :
@@ -224,7 +224,7 @@ When a re-render is not required, we enter event loop mode~$\eloopmode$ and wait
 All semantic functions\footnote{Semantic functions are typeset using an \sem{italicized sans-serif} font.} and evaluation relations, along with their dependencies and required contexts, are summarized in \cref{fig:dependencies}.
 \begin{figure}[t]
   \centering
-  \includegraphics[width=.85\textwidth]{images/diagram.pdf}
+  \includegraphics[width=\linewidth]{images/diagram.pdf}
   \caption{Semantic function dependencies.}\label{fig:dependencies}
 \end{figure}
 We give a brief overview of the semantic functions and relations before we formally introduce them in~\cref{subsec:body,subsec:commiteffs,subsec:reconciliation}:
@@ -372,7 +372,7 @@ Note that the initialization of the child tree does not modify the parent view~$
 \subsection{Committing Effects After Render}\label{subsec:commiteffs}
 After a view has been rendered, the queued Effects must be executed.
 The rules in \cref{fig:commiteffs} describe this process.
-For a constant (\Rule{CommitEffsConst}) and a closure (\Rule{CommitEffsClos}), there are no Effects to commit, so the tree memory remains unchanged.
+For a constant (\Rule{CommitEffsConst}) and a closure (\Rule{Commit\-Effs\-Clos}), there are no Effects to commit, so the tree memory remains unchanged.
 For an array of trees (\Rule{CommitEffsArray}), we recursively commit the Effects of each child tree.
 \begin{figure}[t]
   \centering
@@ -434,9 +434,12 @@ This reconciliation process allows React to efficiently update the UI when state
 
 
 \section{An Illustrative Example}\label{sec:example}
-\begin{wrapfigure}[5]{r}{0.45\linewidth}
-  \vspace*{-1.3\intextsep}
-  \begin{reactcode}
+\begin{figure}[t]
+  \centering
+  \begin{subfigure}[b]{\linewidth}
+    \centering
+    \begin{minipage}{0.4\linewidth}
+    \begin{reactcode}
 let Demo x =
   let (s, setS) = useState x in
   let f = fun s -> s + 1 in
@@ -445,114 +448,123 @@ let Demo x =
   if s <= 1 then () else
     button (fun _ -> setS f);;
 Demo 0
-  \end{reactcode}
-\end{wrapfigure}
-To illustrate the operational semantics of Hooks in action, we walk through the execution of the \reacttt{Demo} component on the right.
+    \end{reactcode}
+    \end{minipage}
+    \caption{An example component \texttt{Demo} showcasing the unnecessary re-rendering issue and the top-level setter issue.}\label{fig:exdemo}
+  \end{subfigure}\\
+  \begin{subfigure}[b]{\linewidth}
+    \centering
+    \smaller[1]
+    \setlength{\tabcolsep}{2.5pt}
+    \renewcommand{\arraystretch}{1}
+  
+    \hphantom{$\overset{\Rule{StepCheck}}{\smallstep}$}
+    \begin{minipage}[t]{0.22\linewidth}
+      \centering
+      $\<\texttt{Demo 0}, [\texttt{Demo} \mapsto \dots]\>$ \\[1ex]
+      \smaller[1]
+      \begin{tabular}{|rl|}
+        \hline
+        \field{dec} & $\{\dec{Check}\}$ \\
+        \field{val} & $0$ \\
+        \field{sttq} & $[\<\lfun{\texttt{s}}{\texttt{s+1}}, \_\>]$ \\
+        \field{effq} & $[\<\texttt{if s=1.\!.\!.}, \_\>]$ \\
+        \field{child} & $\<\>$ \\
+        \hline
+      \end{tabular}
+      (During \Rule{EvalMult})
+    \end{minipage}
+    $\overset{\Rule{StepInit}}{\smallstep}$
+    \begin{minipage}[t]{0.22\linewidth}
+      \centering
+      $\<p_0, [p_0 \mapsto \pi_0], \delta, \rendermode\>$ \\[1ex]
+      \smaller[1]
+      \begin{tabular}{|rl|}
+        \hline
+        \field{dec} & $\{\dec{Effect}\}$ \\
+        \field{val} & $1$ \\
+        \field{sttq} & $[]$ \\
+        \field{effq} & $[\<\texttt{if s=1.\!.\!.}, \_\>]$ \\
+        \field{child} & $\<\>$ \\
+        \hline
+      \end{tabular}
+    \end{minipage}
+    $\overset{\Rule{StepEffect}}{\smallstep}$
+    \begin{minipage}[t]{0.2\linewidth}
+      \centering
+      $\<p_0, [p_0 \mapsto \pi_1], \delta, \checkmode\>$ \\[1ex]
+      \smaller[1]
+      \begin{tabular}{|rl|}
+        \hline
+        \field{dec} & $\{\dec{Check}\}$ \\
+        \field{val} & $1$ \\
+        \field{sttq} & $[\<\lfun{\texttt{s}}{\texttt{s+1}}, \_\>]$ \\
+        \field{effq} & $[]$ \\
+        \field{child} & $\<\>$ \\
+        \hline
+      \end{tabular}
+    \end{minipage}
+    \\[1.5ex]
+    $\overset{\Rule{StepCheck}}{\smallstep}$
+    \begin{minipage}[t]{0.2\linewidth}
+      \centering
+      $\<p_0, [p_0 \mapsto \pi_2], \delta, \rendermode\>$ \\[1ex]
+      \smaller[1]
+      \begin{tabular}{|rl|}
+        \hline
+        \field{dec} & $\{\dec{Effect}\}$ \\
+        \field{val} & $2$ \\
+        \field{sttq} & $[]$ \\
+        \field{effq} & $[\<\texttt{if s=1.\!.\!.}, \_\>]$ \\
+        \field{child} & $\<\lfun{\_}{\texttt{setS f}}, \_\>$ \\
+        \hline
+      \end{tabular}
+    \end{minipage}
+    $\overset{\Rule{StepEffect}}{\smallstep}$
+    \begin{minipage}[t]{0.2\linewidth}
+      \centering
+      $\<p_0, [p_0 \mapsto \pi_3], \delta, \checkmode\>$ \\[1ex]
+      \smaller[1]
+      \begin{tabular}{|rl|}
+        \hline
+        \field{dec} & $\{\}$ \\
+        \field{val} & $2$ \\
+        \field{sttq} & $[]$ \\
+        \field{effq} & $[]$ \\
+        \field{child} & $\<\lfun{\_}{\texttt{setS f}}, \_\>$ \\
+        \hline
+      \end{tabular}
+    \end{minipage}
+    $\overset{\Rule{StepCheck}}{\smallstep}$
+    \begin{minipage}[t]{0.2\linewidth}
+      \centering
+      $\<p_0, [p_0 \mapsto \pi_4], \delta, \eloopmode\>$ \\[1ex]
+      \smaller[1]
+      \begin{tabular}{|rl|}
+        \hline
+        \field{dec} & $\{\}$ \\
+        \field{val} & $2$ \\
+        \field{sttq} & $[]$ \\
+        \field{effq} & $[]$ \\
+        \field{child} & $\<\lfun{\_}{\texttt{setS f}}, \_\>$ \\
+        \hline
+      \end{tabular}
+    \end{minipage}
+    \caption{The render step transitions for \texttt{Demo 0}.}\label{fig:demo0}
+  \end{subfigure}%
+  \caption{An example to illustrate the operational semantics of Hooks.}\label{fig:illust}
+\end{figure}
+To illustrate the operational semantics of Hooks in action, we walk through the execution of the \reacttt{Demo} component in \cref{fig:exdemo}.
 The example incorporates both the \reacttt{useState} and \reacttt{useEffect} Hooks, showcasing the unnecessary re-rendering issue (\cref{sec:unnec}) and the top-level setter issue (\cref{subsec:topset}).
 \reacttt{Demo} also demonstrates reconciliation by updating its child view from~\reacttt{()} to \reacttt{button} (or a closure) after the re-render.
 
-The render step transitions for |Demo 0| is illustrated in the diagram below.
+The render step transitions for |Demo 0| is illustrated in \cref{fig:demo0}.
 The root path is~$p_0$ and each view in each step is indexed, e.g.,~$\pi_0, \dots, \pi_4$.
 For brevity, the state store has been flattened as there is only a single state in \reacttt{Demo} and closures are abbreviated.
-In addition, the intermediate state that triggers a retry is listed below the initial configuration~$\<\texttt{Demo 0}, [\texttt{Demo} \mapsto \dots]\>$.
-\begin{center}
-  \smaller[2]
-  \setlength{\tabcolsep}{2.5pt}
-  \renewcommand{\arraystretch}{1}
-
-  \hphantom{$\overset{\Rule{StepCheck}}{\smallstep}$}
-  \begin{minipage}[t]{0.22\linewidth}
-    \centering
-    $\<\texttt{Demo 0}, [\texttt{Demo} \mapsto \dots]\>$ \\[1ex]
-    \smaller[1]
-    \begin{tabular}{|rl|}
-      \hline
-      \field{dec} & $\{\dec{Check}\}$ \\
-      \field{val} & $0$ \\
-      \field{sttq} & $[\<\lfun{\texttt{s}}{\texttt{s+1}}, \_\>]$ \\
-      \field{effq} & $[\<\texttt{if s=1.\!.\!.}, \_\>]$ \\
-      \field{child} & $\<\>$ \\
-      \hline
-    \end{tabular}
-    (During \Rule{EvalMult})
-  \end{minipage}
-  $\overset{\Rule{StepInit}}{\smallstep}$
-  \begin{minipage}[t]{0.22\linewidth}
-    \centering
-    $\<p_0, [p_0 \mapsto \pi_0], \delta, \rendermode\>$ \\[1ex]
-    \smaller[1]
-    \begin{tabular}{|rl|}
-      \hline
-      \field{dec} & $\{\dec{Effect}\}$ \\
-      \field{val} & $1$ \\
-      \field{sttq} & $[]$ \\
-      \field{effq} & $[\<\texttt{if s=1.\!.\!.}, \_\>]$ \\
-      \field{child} & $\<\>$ \\
-      \hline
-    \end{tabular}
-  \end{minipage}
-  $\overset{\Rule{StepEffect}}{\smallstep}$
-  \begin{minipage}[t]{0.2\linewidth}
-    \centering
-    $\<p_0, [p_0 \mapsto \pi_1], \delta, \checkmode\>$ \\[1ex]
-    \smaller[1]
-    \begin{tabular}{|rl|}
-      \hline
-      \field{dec} & $\{\dec{Check}\}$ \\
-      \field{val} & $1$ \\
-      \field{sttq} & $[\<\lfun{\texttt{s}}{\texttt{s+1}}, \_\>]$ \\
-      \field{effq} & $[]$ \\
-      \field{child} & $\<\>$ \\
-      \hline
-    \end{tabular}
-  \end{minipage}
-  \\[1.5ex]
-  $\overset{\Rule{StepCheck}}{\smallstep}$
-  \begin{minipage}[t]{0.2\linewidth}
-    \centering
-    $\<p_0, [p_0 \mapsto \pi_2], \delta, \rendermode\>$ \\[1ex]
-    \smaller[1]
-    \begin{tabular}{|rl|}
-      \hline
-      \field{dec} & $\{\dec{Effect}\}$ \\
-      \field{val} & $2$ \\
-      \field{sttq} & $[]$ \\
-      \field{effq} & $[\<\texttt{if s=1.\!.\!.}, \_\>]$ \\
-      \field{child} & $\<\lfun{\_}{\texttt{setS f}}, \_\>$ \\
-      \hline
-    \end{tabular}
-  \end{minipage}
-  $\overset{\Rule{StepEffect}}{\smallstep}$
-  \begin{minipage}[t]{0.2\linewidth}
-    \centering
-    $\<p_0, [p_0 \mapsto \pi_3], \delta, \checkmode\>$ \\[1ex]
-    \smaller[1]
-    \begin{tabular}{|rl|}
-      \hline
-      \field{dec} & $\{\}$ \\
-      \field{val} & $2$ \\
-      \field{sttq} & $[]$ \\
-      \field{effq} & $[]$ \\
-      \field{child} & $\<\lfun{\_}{\texttt{setS f}}, \_\>$ \\
-      \hline
-    \end{tabular}
-  \end{minipage}
-  $\overset{\Rule{StepCheck}}{\smallstep}$
-  \begin{minipage}[t]{0.2\linewidth}
-    \centering
-    $\<p_0, [p_0 \mapsto \pi_4], \delta, \eloopmode\>$ \\[1ex]
-    \smaller[1]
-    \begin{tabular}{|rl|}
-      \hline
-      \field{dec} & $\{\}$ \\
-      \field{val} & $2$ \\
-      \field{sttq} & $[]$ \\
-      \field{effq} & $[]$ \\
-      \field{child} & $\<\lfun{\_}{\texttt{setS f}}, \_\>$ \\
-      \hline
-    \end{tabular}
-  \end{minipage}
-\end{center}
+In addition, the intermediate state that triggers a retry is listed below the initial configuration~$\<\texttt{Demo 0}, [\texttt{Demo} \mapsto \dots]\>$ in \cref{fig:demo0}.
+\begin{figure}[t]
+  \centering
+\end{figure}
 
 Let's follow the execution of component \reacttt{Demo} step by step:
 \begin{enumerate}[start=0]
@@ -578,19 +590,19 @@ Let's follow the execution of component \reacttt{Demo} step by step:
       \item The view decided to run \dec{Effect}s, so the queued Effect is evaluated in the \phase{Normal} phase (\Rule{CommitEffsPath}). Note that there is no child view's Effect to run (\Rule{CommitEffsConst}).
       \item In the Effect, $\text{\reacttt{s}} = 1$ and hence \reacttt{setS} is called.
         \dec{Check} decision is added and the state update closure is queued (\Rule{AppSetNormal}).
-      \item \dec{Effect} decision is removed and the decision set is now $\{\dec{Check}\}$ (\Rule{CommitEffsPath}).
+      \item \dec{Effect} decision is removed and the decision set is now $\{\dec{Check}\}$ (\Rule{Commit\-Effs\-Path}).
     \end{enumerate}
 
   \item Now we are in check mode~$\checkmode$, and we check for a re-render (\Rule{StepCheck}).
     \begin{enumerate}
       \item The component body evaluates again (\Rule{EvalOnce}): the state update to~2 turns on \dec{Effect} (\Rule{SttReBind}), the Effect is queued (\Rule{Eff}), and the button event handler is returned.
       \item The previous child~$\<\>$ is reconciled with the closure view spec~$\<\lfun{\_}{\texttt{setS f}}, \_\>$ (\Rule{Check\-Effect}).
-      \item The closure view spec is initialized as it is of different type with~$\<\>$ (\Rule{ReconcileOther}).
+      \item The closure view spec is initialized as it is of different type with~$\<\>$ (\Rule{Re\-concile\-Other}).
     \end{enumerate}
 
   \item We are again in rendered mode~$\rendermode$, so we commit Effects (\Rule{StepEffect}).
     \begin{enumerate}
-      \item Again, the view has $\dec{Effect}$ on and we commit the Effect (\Rule{CommitEffsPath}), but \reacttt{setS} is not called this time.
+      \item Again, the view has $\dec{Effect}$ on and we commit the Effect (\Rule{Commit\-Effs\-Path}), but \reacttt{setS} is not called this time.
         Then we turn off $\dec{Effect}$, leaving the decision set empty (\Rule{CommitEffsPath}).
     \end{enumerate}
 

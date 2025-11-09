@@ -124,6 +124,7 @@
   \end{mathparpagebreakable}
 \end{center}
 
+\clearpage
 \begin{center}
   \input{semantics/evalmult}
 \end{center}
@@ -132,6 +133,7 @@
   \input{semantics/init}
 \end{center}
 
+\clearpage
 \begin{center}
   \input{semantics/check}
 \end{center}
@@ -216,7 +218,7 @@
 \simevallem*
 
 \begin{proof}
-  Suppose $\Step*<\phase{Succ}>[\pi,\sigma[x\mapsto v]]{e}{v,\pi',\omega}$ and $\Step*<\phase{Succ}>[\hat \pi,\sigma[x\mapsto v]]{e}{\hat v',\hat \pi', \hat \omega}$, for some~$\pi$ such that~$\pi.\field{spec} = \<C, v\>$ where~$\delta[C] = \<\lfun{x}{e}, \sigma\>$ and~$\hat\pi \approx \pi$.
+  Let $\Step*<\phase{Succ}>[\pi,\sigma[x\mapsto v]]{e}{v,\pi',\omega}$ and $\Step*<\phase{Succ}>[\hat \pi,\sigma[x\mapsto v]]{e}{\hat v',\hat \pi', \hat \omega}$, for some~$\pi$ such that~$\pi.\field{spec} = \<C, v\>$ where~$\delta[C] = \<\lfun{x}{e}, \sigma\>$ and~$\hat\pi \approx \pi$.
   By \cref{lem:simeval}, evaluations of~$e$ produce $e$-equivalent views, that is, the states whose labels appear in~$e$ are the same in~$\pi'$ and~$\hat \pi'$.
   Since~$\pi'$ and~$\hat \pi'$ are valid under~$\delta$, the only labels that~$\pi'$ and~$\hat \pi'$ have are those appearing in~$e$.
   Therefore, $\pi' = \hat \pi'$.
@@ -267,7 +269,7 @@
 \begin{lem}[Semi-Stability and Normalized Form]\label{lem:stabnorm}
   Let~$\pi$ be a semi-stable view valid under~$\delta$, and let~$\hat\pi = \sem{normalize}(\pi)$.
   If $\dec{Check} \notin \hat\pi.\field{dec}$, then the evaluation of the body produces a view exactly the same as the normalized form.
-  That is, $\Step*<\phase{Succ}>[\pi\{\fv{dec}{\pi.\field{dec} \setminus \{\dec{Check}\}},\fv{effq}{[]}\}, \sigma[x\mapsto v]]{e}{\_,\hat\pi, \omega}$ where~$\pi.\field{spec} = \<C,v\>$ and~$\delta[C] = \<\lfun x e, \sigma\>$.
+  That is, \[\Step*<\phase{Succ}>[\pi\{\fv{dec}{\pi.\field{dec} \setminus \{\dec{Check}\}},\fv{effq}{[]}\}, \sigma[x\mapsto v]]{e}{\_,\hat\pi, \omega}\] where~$\pi.\field{spec} = \<C,v\>$ and~$\delta[C] = \<\lfun x e, \sigma\>$.
 \end{lem}
 
 \begin{proof}
@@ -387,8 +389,8 @@
           By the IH, $\sem{check}(t)$ produces $t$-equivalent results.
         \item $\dec{Check} \in \hat \pi.\field{dec}$:
           By \cref{lem:stabnorm}, $\hat \pi' = \sem{normalize}(\hat \pi)$.
-          Since $\pi \approx \hat \pi$, $\sem{normalize}(\hat \pi) = \sem{normalize}(\pi)$, we have~$\hat\pi' = \pi$.
-          Since no view---including~$\pi$---has \dec{Effect} in~$m$, $\dec{Effect} \notin \hat \pi'.\field{dec}$ as well.
+          Since $\pi \approx \hat \pi$, we have $\sem{normalize}(\hat \pi) = \sem{normalize}(\pi)$, and thus~$\hat\pi' = \pi$.
+          Since no view, including~$\pi$, has \dec{Effect} in~$m$, $\dec{Effect} \notin \hat \pi'.\field{dec}$ as well.
           Therefore, $\hat m, \delta \vdash \sem{check}(p) = \_$ is derived from \Rule{CheckNoEffect},
           and thus $\hat m, \delta \vdash \sem{check}(t) = \<b, \hat m', \omega\>$.
           By the IH, $m' \equiv_t \hat m'$.
@@ -405,7 +407,7 @@
           Therefore, the results are $p$-equivalent.
       \end{itemize}
     \item[{\normalfont\Rule{CheckEffect}}] ($t = p$).
-      Since $\sem{normalize}(\hat \pi) = \sem{normalize}(\pi)$ and $\dec{Check} \in \sem{normalize}(\pi).\field{dec}$, $\dec{Check} \in \hat \pi.\field{dec}$.
+      We have $\dec{Check} \in \hat \pi.\field{dec}$ since $\sem{normalize}(\hat \pi) = \sem{normalize}(\pi)$ and $\dec{Check} \in \sem{normalize}(\pi).\field{dec}$.
       By \cref{lem:simevalbody}, $\pi' = \hat \pi'$,
       and by \cref{lem:reconsim}, $m' \equiv_p \hat m'$.
       Therefore, the results are $p$-equivalent. \qedhere

@@ -50,7 +50,7 @@ We model only the \reacttt{useState} and \reacttt{useEffect} Hooks in our langua
     \reacttt{useState} returns a pair of values: the current state~$x$ and a setter function~$x_{\textsf{set}}$ that updates the state.
   \item The \reacttt{useEffect} Hook enables running arbitrary code~$e$ after a component is rendered.
     This Hook makes it useful to synchronize with the ``outside world,'' but can lead to complex behavior when it triggers a re-render.
-    The expression passed to \reacttt{useEffect},~$e$, is called an \emph{Effect} \citep{Met25Syn}.
+    The expression passed to \mbox{\reacttt{useEffect},}~$e$, is called an \emph{Effect} \citep{Met25Syn}.
 \end{itemize}
 Actually, as we will see in~\cref{chap:pit}, the common pitfalls of Hooks are caused by misusing \reacttt{useState} and \reacttt{useEffect} in combination.
 We now explain how these Hooks are used in React components in~\cref{sec:useState,sec:useEffect}, before presenting their exact semantics in~\cref{chap:sem}.
@@ -80,7 +80,7 @@ The \reacttt{useState} Hook addresses these issues by providing functionality an
 Instead of directly modifying state through assignment, the state is managed by the React runtime and can only be updated by the setter function returned by the Hook.
 The \reacttt{useState} Hook allows the runtime to be aware of the state and handle its bookkeeping, therefore addressing the aforementioned two problems.
 
-\begin{wrapfigure}[4]{r}{0.34\linewidth}
+\begin{wrapfigure}[4]{r}{0.36\linewidth}
   \vspace*{-1.1\intextsep}
   \begin{reactcode}
 let Counter x =
@@ -166,7 +166,7 @@ This ``delayed'' logging is possible as an Effect expression passed to \reacttt{
 While a simple \reacttt{print} as an Effect may seem trivial, this amounts to synchronizing with the outside world, which is the very purpose of the \reacttt{useEffect} Hook.
 In real life, this can be a call to some logging system or user analytics system.
 
-To understand a more peculiar aspect of \reacttt{useEffect}, consider the following \reacttt{SelfCounter} where an Effect creates an autonomous rendering cycle:
+To understand a more peculiar aspect of \reacttt{useEffect}, consider the following \texttt{Self\-Counter} where an Effect creates an autonomous rendering cycle:
 \begin{center}
   \begin{minipage}{.5\linewidth}
     \begin{reactcode}

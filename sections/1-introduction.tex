@@ -39,7 +39,7 @@ Another peculiarity is that developers \emph{cannot} use JavaScript (JS) variabl
 In the above example, assigning a new value to~\reacttt{s} does not update the state of~\reacttt{Counter}---\reacttt{setS} must be used to update the state.
 
 \begin{wrapfigure}[7]{r}{0.5\linewidth}
-  \vspace*{-.7\intextsep}
+  \vspace*{.3\intextsep}
   \begin{reactcode}
 function Cond() {
   const [b, setB] = useState(() => false);
@@ -90,5 +90,9 @@ We present \Rtrace, an operational semantics of React Hooks:
 We introduce \reacttt{useState} and \reacttt{useEffect} and describe challenges in understanding them in~\cref{chap:over}, and illustrate common pitfalls from their interactions in~\cref{chap:pit}.
 We formalize React Hook semantics in~\cref{chap:sem}, present a \Rtrace-definitional interpreter and visualizer in~\cref{chap:impl}, and demonstrate conformance with React in~\cref{chap:rules}.
 We discuss extensions and implications in~\cref{chap:discussion}, compare with related work in~\cref{chap:related}, and conclude with future work in~\cref{chap:conclusion}.
+
+
+\section*{Data-Availability Statement}
+The source code and test suite for the \Rtrace{} interpreter and visualizer are available on GitHub at \href{https://github.com/Zeta611/react-trace}{\gh{Zeta611/react-trace}}, archived on Zenodo \citep{LeeAhn25Zenodo}, and hosted online at \href{https://react-trace.vercel.app/}{\nolinkurl{react-trace.vercel.app}}.
 
 This work was published under the same title at OOPSLA~2025 \citep{LeeAhnYi25React}.
