@@ -113,6 +113,25 @@
     }
   }
 
+\newcommand\frontmatter{%
+  \cleardoublepage
+  %\@mainmatterfalse
+\pagenumbering{roman}}
+
+\newcommand\mainmatter{%
+  \cleardoublepage
+ % \@mainmattertrue
+  \pagenumbering{arabic}}
+
+\newcommand\backmatter{%
+  \if@openright
+    \cleardoublepage
+  \else
+    \clearpage
+  \fi
+ % \@mainmatterfalse
+}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 % Package dependencies %
@@ -221,9 +240,12 @@
   \hypersetup{
     colorlinks,
     linkcolor=black,
-    citecolor=ACMPurple,
-    urlcolor=ACMDarkBlue,
-    filecolor=ACMDarkBlue,
+    % citecolor=ACMPurple,
+    % urlcolor=ACMDarkBlue,
+    % filecolor=ACMDarkBlue,
+    citecolor=black,
+    urlcolor=black,
+    filecolor=black,
 
     pdflang = { \bool_if:NTF \l_snu_cse_ms_thesis_en_bool { en } { ko } },
     pdfsubject = {공학석사~학위논문},
